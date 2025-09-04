@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mad Libs Prompt Generator</title>
+    <title>Mad Lib Prompt Generator</title>
     
     <!-- Google Fonts for a fun, clean look -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -49,7 +49,7 @@
         <button id="persistent-refresh-btn" title="Start a New Round" class="absolute top-5 right-5 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 rounded-full p-2 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64M3.51 15A9 9 0 0 0 18.36 18.36"></path></svg>
         </button>
-        <h1 class="text-4xl sm:text-5xl font-bold text-blue-600 mb-2">Mad Libs Generator</h1>
+        <h1 class="text-4xl sm:text-5xl font-bold text-blue-600 mb-2">Mad Lib Generator</h1>
         <p class="text-gray-500 text-lg mb-8">A fun tool for creative thinking and hilarious explanations!</p>
 
         <div class="flex flex-col gap-6 mb-8">
@@ -495,7 +495,9 @@
         
         // --- OFFLINE/CLASSIC LOGIC ---
         const personas = [
-             'a 5-year-old kid', 'a moody teenager', 'a wise 90-year-old lola', 'a "Tita" of Manila', 'a recent college graduate', 'a tired new parent', 'a jeepney driver stuck in EDSA traffic', 'a friendly call center agent on their break', 'a "tindera" at a sari-sari store', 'a hardworking rice farmer from the province', 'a mall security guard', 'an OFW on a video call', 'a GrabFood delivery rider', 'a NASA astronaut', 'a skeptical scientist', 'a dramatic theater actor', 'a busy corporate lawyer', 'a world-famous chef', 'a software developer who only speaks in code', 'a very confused historian', 'Jollibee', 'Darna', 'Cardo Dalisay from "Ang Probinsyano"', 'a certified "Marites" (neighborhood gossiper)', 'Vice Ganda', 'a KathNiel super-fan', 'a K-Pop idol from BTS', 'a member of Blackpink', 'Taylor Swift', 'Iron Man', 'Elsa from Frozen', 'SpongeBob SquarePants', 'Pikachu', 'Harry Potter', 'Luffy from One Piece', 'a Jedi Knight', 'a character from a Jose Rizal novel', 'an alien who just landed in Quiapo', 'a time traveler from the Spanish colonial era', 'a talking tarsier from Bohol', 'your future self from the year 2050', 'a ghost from Balete Drive', 'a super-intelligent AI', 'a golden retriever', 'a cat that is judging you', 'someone who just woke up from a a 20-year coma', 'a conspiracy theorist', 'a hopeless romantic', 'a complete cynic', 'a dragon', 'a mermaid from the seas of Palawan', 'someone who has never used a smartphone'
+             'a 5-year-old kid', 'a moody teenager', 'a wise 90-year-old lola', 'a "Tita" of Manila', 'a recent college graduate', 'a tired new parent', 'a jeepney driver stuck in EDSA traffic', 'a friendly call center agent on their break', 'a "tindera" at a sari-sari store', 'a hardworking rice farmer from the province', 'a mall security guard', 'an OFW on a video call', 'a GrabFood delivery rider', 'a NASA astronaut', 'a skeptical scientist', 'a dramatic theater actor', 'a busy corporate lawyer', 'a world-famous chef', 'a software developer who only speaks in code', 'a very confused historian', 
+             'Jollibee', 'Darna', 'Cardo Dalisay from "Ang Probinsyano"', 'a certified "Marites" (neighborhood gossiper)', 'Vice Ganda', 'Manny Pacquiao', 'Hidilyn Diaz', 'Catriona Gray', 'Heart Evangelista', 'Jose Rizal', 'Heneral Luna', 'Popoy from "One More Chance"', 'a KathNiel super-fan', 'a K-Pop idol from BTS', 'a member of Blackpink', 'Taylor Swift', 'Iron Man', 'Elsa from Frozen', 'SpongeBob SquarePants', 'Pikachu', 'Harry Potter', 'Luffy from One Piece', 'a Jedi Knight', 
+             'a character from a Jose Rizal novel', 'an alien who just landed in Quiapo', 'a time traveler from the Spanish colonial era', 'a talking tarsier from Bohol', 'your future self from the year 2050', 'a ghost from Balete Drive', 'a super-intelligent AI', 'a golden retriever', 'a cat that is judging you', 'someone who just woke up from a a 20-year coma', 'a conspiracy theorist', 'a hopeless romantic', 'a complete cynic', 'a dragon', 'a mermaid from the seas of Palawan', 'someone who has never used a smartphone'
         ];
 
         function generateMadLib() {
