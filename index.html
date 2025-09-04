@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mad Libs Prompt Generator</title>
+    
+    <!-- Google Fonts for a fun, clean look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- QR Code Generation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        /* Custom font for the body */
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        /* Simple animation for dialogue bubbles */
+        @keyframes pop-in {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .bubble {
+            animation: pop-in 0.3s ease-out forwards;
+        }
+        /* Hide scrollbar but allow scrolling */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        #notification {
+            transition: transform 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-5">
+
+    <!-- Presenter View Container -->
+    <div id="presenter-view" class="bg-white rounded-2xl shadow-xl p-8 sm:p-12 text-center w-full max-w-3xl transform transition-all">
+        <h1 class="text-4xl sm:text-5xl font-bold text-blue-600 mb-2">Mad Libs Generator</h1>
+        <p class="text-gray-500 text-lg mb-8">A fun tool for creative thinking and hilarious explanations!</p>
+
+        <div class="flex flex-col gap-6 mb-8">
+            <input type="text" id="topicInput" placeholder="Enter a topic, e.g., 'The Internet'" class="w-full px-5 py-4 text-lg border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-shadow">
+            <div class="grid sm:grid-cols-2 gap-4">
+                 <button id="generateBtn" class="w-full bg-blue-600 text-white font-bold text-lg uppercase tracking-wider py-4 rounded-xl hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 transform hover:-translate-y-1 transition-all shadow-lg hover:shadow-xl">
+                    Generate Prompt
+                </button>
+                 <button id="askAudienceBtn" class="w-full bg-green-500 text-white font-bold text-lg uppercase tracking-wider py-4 rounded-xl hover:bg-green-600 active:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 transform hover:-translate-y-1 transition-all shadow-lg hover:shadow-xl">
+                    Ask The Audience
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-gray-50 p-6 rounded-xl min-h-[120px] flex justify-center items-center border-2 border-dashed border-gray-300">
+            <p id="result" class="text-xl sm:text-2xl font-medium text-gray-700 leading-relaxed">Your prompt will appear here...</p>
+        </div>
+        
+        <!-- Audience Submissions Area -->
+        <div id="submissions-container" class="mt-8 hidden">
+             <h2 class="text-2xl font-bold text-gray-700 mb-4">Audience Ideas</h2>
+             <div id="submissions-grid" class="max-h-[400px] overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 bg-gray-100 rounded-lg no-scrollbar">
+                <!-- Bubbles will be inserted here -->
+             </div>
+             <button id="startVotingBtn" class="hidden mt-6 w-full bg-red-500 text-white font-bold text-lg uppercase tracking-wider py-3 rounded-xl hover:bg-red-600 focus:outline-none focus:ring-4 focus:ring-red-300 shadow-lg">
+                Start Voting!
+             </button>
+        </div>
+
+
+        <footer class="mt-8 text-sm text-gray-400">
+            Built with ❤️ in Quezon City
+        </footer>
+    </div>
+    
+    <!-- Audience View Container -->
+    <div id="audience-view" class="hidden bg-white rounded-2xl shadow-xl p-8 sm:p-12 text-center w-full max-w-md">
+        <h1 id="audience-title" class="text-3xl font-bold text-blue-600 mb-4">Join the Fun!</h1>
+        <p id="audience-instruction" class="text-gray-500 mb-6">Submit your fun persona idea below.</p>
+        <div id="audience-submission-form">
+            <input type="text" id="audienceInput" placeholder="e.g., 'a talking tarsier'" class="w-full px-5 py-4 text-lg border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-shadow mb-4">
+            <button id="submitAudienceBtn" class="w-full bg-blue-600 text-white font-bold text-lg uppercase tracking-wider py-4 rounded-xl hover:bg-blue-700 shadow-lg">Submit</button>
+        </div>
+        <div id="audience-voting-area" class="hidden w-full text-left">
+            <!-- Audience voting options will appear here -->
+        </div>
+         <p id="thanks-message" class="hidden mt-6 text-xl font-semibold text-green-600">Thanks for your submission! Waiting for others...</p>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div id="qr-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-8 text-center relative max-w-sm w-full">
+            <button id="close-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            <h2 class="text-2xl font-bold text-blue-600 mb-4">Scan to Join!</h2>
+            <p class="text-gray-600 mb-6">Ask your audience to scan this QR code with their phones to submit ideas.</p>
+            <div id="qrcode" class="flex justify-center"></div>
+            <p id="session-id-display" class="mt-4 text-sm text-gray-500 font-mono"></p>
+        </div>
+    </div>
+
+    <!-- Notification Element -->
+    <div id="notification" class="hidden fixed top-5 right-5 bg-red-500 text-white py-3 px-5 rounded-lg shadow-lg" style="transform: translateX(120%);">
+        <p id="notification-message"></p>
+    </div>
+
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc, updateDoc, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- GLOBAL VARIABLES ---
+        let db, auth, userId, currentSessionId;
+        let unsubscribeSubmissions = null; 
+        let unsubscribeSession = null;
+        let votedFor = null;
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'madlibs-app';
+        
+        // --- DOM ELEMENTS ---
+        const presenter_view = document.getElementById('presenter-view');
+        const audience_view = document.getElementById('audience-view');
+        const topicInput = document.getElementById('topicInput');
+        const generateBtn = document.getElementById('generateBtn');
+        const askAudienceBtn = document.getElementById('askAudienceBtn');
+        const resultElement = document.getElementById('result');
+        const submissionsContainer = document.getElementById('submissions-container');
+        const submissionsGrid = document.getElementById('submissions-grid');
+        const startVotingBtn = document.getElementById('startVotingBtn');
+        const audienceInput = document.getElementById('audienceInput');
+        const submitAudienceBtn = document.getElementById('submitAudienceBtn');
+        const audienceSubmissionForm = document.getElementById('audience-submission-form');
+        const audienceVotingArea = document.getElementById('audience-voting-area');
+        const thanksMessage = document.getElementById('thanks-message');
+        const qrModal = document.getElementById('qr-modal');
+        const closeModalBtn = document.getElementById('close-modal');
+        const qrcodeContainer = document.getElementById('qrcode');
+        const sessionIdDisplay = document.getElementById('session-id-display');
+        const notification = document.getElementById('notification');
+        const notificationMessage = document.getElementById('notification-message');
+       
+        // --- FIREBASE SETUP ---
+        async function setupFirebase() {
+            try {
+                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        main();
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                });
+            } catch (e) {
+                console.error("Firebase config not found or invalid. Using offline mode.", e);
+                main(); // Run in offline mode if firebase fails
+            }
+        }
+
+        // --- APP INITIALIZATION ---
+        function main() {
+            const params = new URLSearchParams(window.location.search);
+            currentSessionId = params.get('session');
+
+            if (currentSessionId) {
+                initializeAudienceView();
+            } else {
+                initializePresenterView();
+            }
+        }
+        
+        // --- PRESENTER LOGIC ---
+        function initializePresenterView() {
+            presenter_view.classList.remove('hidden');
+            generateBtn.addEventListener('click', generateMadLib);
+            topicInput.addEventListener('keyup', (event) => event.key === 'Enter' && generateMadLib());
+            askAudienceBtn.addEventListener('click', handleAskAudience);
+            closeModalBtn.addEventListener('click', () => qrModal.classList.add('hidden'));
+            startVotingBtn.addEventListener('click', handleStartVoting);
+        }
+
+        async function handleAskAudience() {
+            if (!db) {
+                showNotification("Real-time features are disabled.", 'error');
+                return;
+            }
+            currentSessionId = generateSessionId();
+            const sessionRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions`, currentSessionId);
+            await setDoc(sessionRef, { votingOpen: false, createdAt: new Date() });
+
+            // Use the specific GitHub Pages URL provided by the user
+            const url = `http://galvinradleyngo.github.io/madlib/?session=${currentSessionId}`;
+            qrcodeContainer.innerHTML = '';
+            new QRCode(qrcodeContainer, { text: url, width: 200, height: 200 });
+            sessionIdDisplay.textContent = `Session ID: ${currentSessionId}`;
+            qrModal.classList.remove('hidden');
+            
+            listenForSubmissions();
+        }
+
+        function listenForSubmissions() {
+            submissionsContainer.classList.remove('hidden');
+            submissionsGrid.innerHTML = ''; // Clear previous submissions
+            const submissionsRef = collection(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`);
+            
+            if(unsubscribeSubmissions) unsubscribeSubmissions();
+            unsubscribeSubmissions = onSnapshot(submissionsRef, (snapshot) => {
+                startVotingBtn.classList.toggle('hidden', snapshot.empty);
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added") {
+                        renderBubble(change.doc.id, change.doc.data(), 'presenter');
+                    }
+                    if (change.type === "modified") {
+                         const bubble = document.getElementById(`bubble-presenter-${change.doc.id}`);
+                         if(bubble) {
+                            const voteCount = bubble.querySelector('.vote-count');
+                            if(voteCount) voteCount.textContent = change.doc.data().votes || 0;
+                         }
+                    }
+                });
+            });
+        }
+        
+        async function handleStartVoting() {
+             const sessionRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions`, currentSessionId);
+             await updateDoc(sessionRef, { votingOpen: true });
+             startVotingBtn.classList.add('hidden');
+             const allBubbles = submissionsGrid.querySelectorAll('.bubble');
+             allBubbles.forEach(b => b.classList.add('pointer-events-none')); // Disable voting for presenter
+        }
+
+        // --- AUDIENCE LOGIC ---
+        function initializeAudienceView() {
+            audience_view.classList.remove('hidden');
+            submitAudienceBtn.addEventListener('click', handleAudienceSubmit);
+            audienceInput.addEventListener('keyup', (event) => event.key === 'Enter' && handleAudienceSubmit());
+            listenForSessionState();
+        }
+
+        async function handleAudienceSubmit() {
+            const text = audienceInput.value.trim();
+            if (text && db) {
+                const submissionsRef = collection(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`);
+                await addDoc(submissionsRef, { text, votes: 0, author: userId });
+                audienceSubmissionForm.classList.add('hidden');
+                thanksMessage.classList.remove('hidden');
+            }
+        }
+        
+        function listenForSessionState() {
+             const sessionRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions`, currentSessionId);
+             if(unsubscribeSession) unsubscribeSession();
+             unsubscribeSession = onSnapshot(sessionRef, (docSnap) => {
+                 if (docSnap.exists() && docSnap.data().votingOpen) {
+                     // Voting has started, switch to voting view
+                     thanksMessage.classList.add('hidden');
+                     audienceSubmissionForm.classList.add('hidden');
+                     audienceVotingArea.classList.remove('hidden');
+                     document.getElementById('audience-title').textContent = "Vote for your Favorite!";
+                     document.getElementById('audience-instruction').textContent = "Tap on an idea to cast your vote.";
+                     loadVotingOptions();
+                 }
+             });
+        }
+        
+        function loadVotingOptions() {
+            const submissionsRef = collection(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`);
+            if(unsubscribeSubmissions) unsubscribeSubmissions();
+            unsubscribeSubmissions = onSnapshot(submissionsRef, (snapshot) => {
+                audienceVotingArea.innerHTML = '';
+                snapshot.forEach(doc => {
+                    renderBubble(doc.id, doc.data(), 'audience');
+                });
+            });
+        }
+
+        async function handleVote(docId) {
+             if (votedFor === docId) return; // Already voted for this one
+             if (!db) return;
+
+             const batch = writeBatch(db);
+             
+             // New vote
+             const newVoteRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`, docId);
+             const submissionDoc = await getDoc(newVoteRef);
+             if (submissionDoc.exists()) {
+                const currentVotes = submissionDoc.data().votes || 0;
+                batch.update(newVoteRef, { votes: currentVotes + 1 });
+             }
+             
+             // Remove previous vote if exists
+             if (votedFor) {
+                const oldVoteRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`, votedFor);
+                const oldSubmissionDoc = await getDoc(oldVoteRef);
+                if (oldSubmissionDoc.exists()) {
+                    const oldVotes = oldSubmissionDoc.data().votes || 0;
+                    if(oldVotes > 0) batch.update(oldVoteRef, { votes: oldVotes - 1 });
+                }
+             }
+             
+             await batch.commit();
+             votedFor = docId; // Mark that user has voted
+             
+             // Update UI to show selection
+             const allBubbles = audienceVotingArea.querySelectorAll('.bubble-vote');
+             allBubbles.forEach(b => b.classList.remove('ring-4', 'ring-green-400'));
+             document.getElementById(`bubble-audience-${docId}`).classList.add('ring-4', 'ring-green-400');
+        }
+
+        // --- SHARED UI LOGIC ---
+        function renderBubble(id, data, viewType) {
+             const isPresenter = viewType === 'presenter';
+             const container = isPresenter ? submissionsGrid : audienceVotingArea;
+
+             let bubble = document.getElementById(`bubble-${viewType}-${id}`);
+             if (!bubble) {
+                bubble = document.createElement('div');
+                bubble.id = `bubble-${viewType}-${id}`;
+                if (isPresenter) {
+                    bubble.className = "bubble bg-white p-4 rounded-lg shadow text-center break-words";
+                } else {
+                    bubble.className = "bubble-vote w-full bg-white p-4 my-2 rounded-lg shadow text-left break-words cursor-pointer transition-transform hover:scale-105";
+                    bubble.addEventListener('click', () => handleVote(id));
+                }
+                container.appendChild(bubble);
+             }
+             
+             bubble.innerHTML = isPresenter ? 
+                `<p class="text-gray-800 text-lg">${data.text}</p><span class="vote-count font-bold text-xl text-blue-600 mt-2 block">${data.votes || 0}</span>` : 
+                `<span class="float-right font-bold text-blue-600 text-lg">${data.votes || 0}</span><p class="text-gray-800">${data.text}</p>`;
+
+             if(votedFor === id && !isPresenter) {
+                bubble.classList.add('ring-4', 'ring-green-400');
+             }
+        }
+        
+        // --- OFFLINE/CLASSIC LOGIC ---
+        const personas = [
+             'a 5-year-old kid', 'a moody teenager', 'a wise 90-year-old lola', 'a "Tita" of Manila', 'a recent college graduate', 'a tired new parent', 'a jeepney driver stuck in EDSA traffic', 'a friendly call center agent on their break', 'a "tindera" at a sari-sari store', 'a hardworking rice farmer from the province', 'a mall security guard', 'an OFW on a video call', 'a GrabFood delivery rider', 'a NASA astronaut', 'a skeptical scientist', 'a dramatic theater actor', 'a busy corporate lawyer', 'a world-famous chef', 'a software developer who only speaks in code', 'a very confused historian', 'Jollibee', 'Darna', 'Cardo Dalisay from "Ang Probinsyano"', 'a certified "Marites" (neighborhood gossiper)', 'Vice Ganda', 'a KathNiel super-fan', 'a K-Pop idol from BTS', 'a member of Blackpink', 'Taylor Swift', 'Iron Man', 'Elsa from Frozen', 'SpongeBob SquarePants', 'Pikachu', 'Harry Potter', 'Luffy from One Piece', 'a Jedi Knight', 'a character from a Jose Rizal novel', 'an alien who just landed in Quiapo', 'a time traveler from the Spanish colonial era', 'a talking tarsier from Bohol', 'your future self from the year 2050', 'a ghost from Balete Drive', 'a super-intelligent AI', 'a golden retriever', 'a cat that is judging you', 'someone who just woke up from a a 20-year coma', 'a conspiracy theorist', 'a hopeless romantic', 'a complete cynic', 'a dragon', 'a mermaid from the seas of Palawan', 'someone who has never used a smartphone'
+        ];
+
+        function generateMadLib() {
+            let topic = topicInput.value.trim() || "(your amazing topic)";
+            const randomIndex = Math.floor(Math.random() * personas.length);
+            const randomPersona = personas[randomIndex];
+            resultElement.innerHTML = `Explain <strong class="text-blue-600 bg-blue-100 py-1 px-2 rounded-md">${topic}</strong> to <strong class="text-blue-600 bg-blue-100 py-1 px-2 rounded-md">${randomPersona}</strong>.`;
+        }
+
+        // --- UTILITY FUNCTIONS ---
+        function generateSessionId() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        function showNotification(message, type = 'error') {
+            notificationMessage.textContent = message;
+            
+            notification.classList.remove('bg-red-500', 'bg-green-500');
+            notification.classList.add(type === 'error' ? 'bg-red-500' : 'bg-green-500');
+            notification.classList.remove('hidden');
+
+            // Animate in
+            setTimeout(() => {
+                 notification.style.transform = 'translateX(0)';
+            }, 10);
+
+            // Animate out after a delay
+            setTimeout(() => {
+                notification.style.transform = 'translateX(120%)';
+            }, 4000);
+        }
+
+        // Start the application
+        setupFirebase();
+
+    </script>
+</body>
+</html>
+
