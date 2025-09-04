@@ -45,7 +45,10 @@
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-5">
 
     <!-- Presenter View Container -->
-    <div id="presenter-view" class="bg-white rounded-2xl shadow-xl p-8 sm:p-12 text-center w-full max-w-3xl transform transition-all">
+    <div id="presenter-view" class="relative bg-white rounded-2xl shadow-xl p-8 sm:p-12 text-center w-full max-w-3xl transform transition-all">
+        <button id="persistent-refresh-btn" title="Start a New Round" class="absolute top-5 right-5 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 rounded-full p-2 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64M3.51 15A9 9 0 0 0 18.36 18.36"></path></svg>
+        </button>
         <h1 class="text-4xl sm:text-5xl font-bold text-blue-600 mb-2">Mad Libs Generator</h1>
         <p class="text-gray-500 text-lg mb-8">A fun tool for creative thinking and hilarious explanations!</p>
 
@@ -91,6 +94,10 @@
     
     <!-- Audience View Container -->
     <div id="audience-view" class="hidden bg-white rounded-2xl shadow-xl p-8 sm:p-12 text-center w-full max-w-md">
+        <div id="audience-prompt-display" class="bg-gray-100 p-4 rounded-lg mb-6 border border-gray-200 hidden text-base leading-relaxed">
+            <!-- Prompt will be injected here -->
+        </div>
+
         <h1 id="audience-title" class="text-3xl font-bold text-blue-600 mb-2">Join the Fun!</h1>
         <p id="audience-instruction" class="text-gray-500 mb-6">Submit your fun persona idea below.</p>
         
@@ -166,6 +173,7 @@
         // --- DOM ELEMENTS ---
         const presenter_view = document.getElementById('presenter-view');
         const audience_view = document.getElementById('audience-view');
+        const persistentRefreshBtn = document.getElementById('persistent-refresh-btn');
         const topicInput = document.getElementById('topicInput');
         const generateBtn = document.getElementById('generateBtn');
         const askAudienceBtn = document.getElementById('askAudienceBtn');
@@ -176,6 +184,7 @@
         const endVotingBtn = document.getElementById('endVotingBtn');
         const newRoundBtn = document.getElementById('newRoundBtn');
         const audienceInput = document.getElementById('audienceInput');
+        const audiencePromptDisplay = document.getElementById('audience-prompt-display');
         const submitAudienceBtn = document.getElementById('submitAudienceBtn');
         const audienceSubmissionForm = document.getElementById('audience-submission-form');
         const audienceVotingArea = document.getElementById('audience-voting-area');
@@ -247,6 +256,7 @@
         function initializePresenterView() {
             presenter_view.classList.remove('hidden');
             audience_view.classList.add('hidden');
+            persistentRefreshBtn.addEventListener('click', resetForNewRound);
             generateBtn.addEventListener('click', generateMadLib);
             topicInput.addEventListener('keyup', (event) => event.key === 'Enter' && generateMadLib());
             askAudienceBtn.addEventListener('click', handleAskAudience);
@@ -265,7 +275,14 @@
             if (!db) { return showNotification("Real-time features are disabled.", 'error');}
             currentSessionId = generateSessionId();
             const sessionRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions`, currentSessionId);
-            await setDoc(sessionRef, { votingOpen: false, winnerAnnounced: false, createdAt: new Date() });
+            const currentPrompt = resultElement.innerHTML;
+
+            await setDoc(sessionRef, { 
+                votingOpen: false, 
+                winnerAnnounced: false, 
+                createdAt: new Date(),
+                prompt: currentPrompt 
+            });
 
             const url = `http://galvinradleyngo.github.io/madlib/?session=${currentSessionId}`;
             qrcodeContainer.innerHTML = '';
@@ -376,6 +393,11 @@
                  if (!docSnap.exists()) return;
                  const sessionData = docSnap.data();
 
+                 if (sessionData.prompt && sessionData.prompt !== 'Your prompt will appear here...') {
+                    audiencePromptDisplay.innerHTML = sessionData.prompt;
+                    audiencePromptDisplay.classList.remove('hidden');
+                 }
+
                  if (sessionData.winnerAnnounced) {
                     audienceSubmissionForm.classList.add('hidden');
                     thanksMessage.classList.add('hidden');
@@ -480,7 +502,13 @@
             let topic = topicInput.value.trim() || "(your amazing topic)";
             const randomIndex = Math.floor(Math.random() * personas.length);
             const randomPersona = personas[randomIndex];
-            resultElement.innerHTML = `Explain <strong class="inline-block align-middle text-blue-600 bg-blue-100 py-1 px-2 rounded-md mx-1">${topic}</strong> to <strong class="inline-block align-middle text-blue-600 bg-blue-100 py-1 px-2 rounded-md mx-1">${randomPersona}</strong>.`;
+            const newPromptHTML = `Explain <strong class="inline-block align-middle text-blue-600 bg-blue-100 py-1 px-2 rounded-md mx-1">${topic}</strong> to <strong class="inline-block align-middle text-blue-600 bg-blue-100 py-1 px-2 rounded-md mx-1">${randomPersona}</strong>.`;
+            resultElement.innerHTML = newPromptHTML;
+
+            if (currentSessionId && db) {
+                const sessionRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions`, currentSessionId);
+                updateDoc(sessionRef, { prompt: newPromptHTML }).catch(err => console.error("Failed to update prompt:", err));
+            }
         }
 
         // --- UTILITY FUNCTIONS ---
