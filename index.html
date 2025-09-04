@@ -62,12 +62,15 @@
 
         <div class="flex flex-col gap-6 mb-8">
             <input type="text" id="topicInput" data-key-placeholder="topic-placeholder" placeholder="Enter a topic, e.g., 'The Internet'" class="w-full px-5 py-4 text-lg border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-shadow">
-            <div class="grid sm:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                  <button id="generateBtn" data-key="generate-btn" class="w-full bg-blue-600 text-white font-bold text-lg uppercase tracking-wider py-4 rounded-xl hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 transform hover:-translate-y-1 transition-all shadow-lg hover:shadow-xl">
-                    Generate Prompt
+                    Generate
                 </button>
                  <button id="askAudienceBtn" data-key="ask-audience-btn" class="w-full bg-green-500 text-white font-bold text-lg uppercase tracking-wider py-4 rounded-xl hover:bg-green-600 active:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 transform hover:-translate-y-1 transition-all shadow-lg hover:shadow-xl">
-                    Ask The Audience
+                    Audience
+                </button>
+                 <button id="customizeBtn" data-key="customize-btn" class="w-full bg-gray-500 text-white font-bold text-lg uppercase tracking-wider py-4 rounded-xl hover:bg-gray-600 active:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-300 transform hover:-translate-y-1 transition-all shadow-lg hover:shadow-xl">
+                    Customize
                 </button>
             </div>
         </div>
@@ -135,6 +138,24 @@
         </footer>
     </div>
 
+    <!-- Customize List Modal -->
+    <div id="customize-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-8 text-left relative max-w-md w-full">
+            <h2 class="text-2xl font-bold text-blue-600 mb-2" data-key="customize-modal-title">Customize Your Persona List</h2>
+            <p class="text-gray-600 mb-4" data-key="customize-modal-instruction">Enter one person, character, or phrase per line. This will replace the default list for this session.</p>
+            <div class="mb-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-3 rounded-r-lg" role="alert">
+                <p class="font-bold" data-key="customize-tip-title">Pro Tip!</p>
+                <p class="text-xs" data-key="customize-tip-body">Using it in a specific context? Generate your own list of possible options here. You may want to consider categories that might be more relevant to your context (ex. Philippine heroes, famous writers, characters in a novel, positions in an organization) - this can make your activity more educative and aligned to your learning goals.</p>
+            </div>
+            <textarea id="custom-list-textarea" class="w-full h-48 p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Jollibee&#10;Darna&#10;a moody teenager..."></textarea>
+            <div class="flex justify-end gap-4 mt-4">
+                <button id="close-customize-modal" class="bg-gray-200 text-gray-800 font-bold py-2 px-5 rounded-lg" data-key="cancel-btn">Cancel</button>
+                <button id="save-custom-list" class="bg-blue-600 text-white font-bold py-2 px-5 rounded-lg" data-key="save-btn">Save List</button>
+            </div>
+        </div>
+    </div>
+
+
     <!-- QR Code Modal -->
     <div id="qr-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl p-8 text-center relative max-w-sm w-full">
@@ -181,6 +202,7 @@
         let unsubscribeSubmissions = null; 
         let unsubscribeSession = null;
         let currentLanguage = 'en';
+        let customPersonas = [];
         const MAX_VOTES = 3;
         let votesUsed = 0;
         let votedForIds = [];
@@ -195,6 +217,7 @@
         const topicInput = document.getElementById('topicInput');
         const generateBtn = document.getElementById('generateBtn');
         const askAudienceBtn = document.getElementById('askAudienceBtn');
+        const customizeBtn = document.getElementById('customizeBtn');
         const resultElement = document.getElementById('result');
         const submissionsContainer = document.getElementById('submissions-container');
         const submissionsGrid = document.getElementById('submissions-grid');
@@ -223,10 +246,13 @@
         const notification = document.getElementById('notification');
         const notificationMessage = document.getElementById('notification-message');
         const connectionStatus = document.getElementById('connection-status');
+        const customizeModal = document.getElementById('customize-modal');
+        const closeCustomizeModalBtn = document.getElementById('close-customize-modal');
+        const customListTextarea = document.getElementById('custom-list-textarea');
+        const saveCustomListBtn = document.getElementById('save-custom-list');
        
         // --- FIREBASE SETUP ---
         async function setupFirebase() {
-            // Hardcoded Firebase configuration provided by the user.
             const firebaseConfig = {
               apiKey: "AIzaSyBkbkMOuCCPMGapoJ5tIGnDUE7IZGhk-RA",
               authDomain: "madlibs-76c98.firebaseapp.com",
@@ -237,9 +263,7 @@
             };
 
             try {
-                if (!firebaseConfig.apiKey) {
-                   throw new Error("Firebase config is missing.");
-                }
+                if (!firebaseConfig.apiKey) throw new Error("Firebase config is missing.");
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
@@ -280,10 +304,13 @@
             audience_view.classList.add('hidden');
             languageToggleBtn.addEventListener('click', toggleLanguage);
             updateLanguageToggleState();
-            persistentRefreshBtn.addEventListener('click', resetForNewRound);
+            persistentRefreshBtn.addEventListener('click', () => location.reload());
             generateBtn.addEventListener('click', generateMadLib);
             topicInput.addEventListener('keyup', (event) => event.key === 'Enter' && generateMadLib());
             askAudienceBtn.addEventListener('click', handleAskAudience);
+            customizeBtn.addEventListener('click', () => customizeModal.classList.remove('hidden'));
+            closeCustomizeModalBtn.addEventListener('click', () => customizeModal.classList.add('hidden'));
+            saveCustomListBtn.addEventListener('click', handleSaveCustomList);
             closeModalBtn.addEventListener('click', () => qrModal.classList.add('hidden'));
             startVotingBtn.addEventListener('click', handleStartVoting);
             endVotingBtn.addEventListener('click', handleEndVoting);
@@ -293,6 +320,17 @@
                 winnerModal.querySelector('div').classList.add('scale-95');
             });
             copyLinkBtn.addEventListener('click', copySessionLink);
+        }
+        
+        function handleSaveCustomList() {
+            const text = customListTextarea.value.trim();
+            if (text) {
+                customPersonas = text.split('\n').map(p => p.trim()).filter(p => p);
+                showNotification(uiTranslations[currentLanguage]['list-saved-notification'], 'success');
+            } else {
+                customPersonas = []; // Clear list if textarea is empty
+            }
+            customizeModal.classList.add('hidden');
         }
 
         async function handleAskAudience() {
@@ -374,7 +412,6 @@
             endVotingBtn.classList.add('hidden');
             newRoundBtn.classList.add('hidden');
             startVotingBtn.classList.add('hidden');
-
             submissionsGrid.innerHTML = '';
             resultElement.innerHTML = uiTranslations[currentLanguage]['prompt-placeholder'];
             topicInput.value = '';
@@ -530,8 +567,9 @@
                 'main-title': 'Mad Lib Generator',
                 'main-subtitle': 'A fun tool for creative thinking and hilarious explanations!',
                 'topic-placeholder': "Enter a topic, e.g., 'The Internet'",
-                'generate-btn': 'Generate Prompt',
-                'ask-audience-btn': 'Ask The Audience',
+                'generate-btn': 'Generate',
+                'ask-audience-btn': 'Audience',
+                'customize-btn': 'Customize',
                 'prompt-placeholder': 'Your prompt will appear here...',
                 'audience-ideas-title': 'Audience Ideas',
                 'start-voting-btn': 'Start Voting!',
@@ -557,13 +595,21 @@
                 'audience-instruction-vote': 'You have 3 votes. Tap to vote or un-vote.',
                 'max-votes-notification': 'You have used all 3 votes!',
                 'new-round-notification': 'Ready for a new round!',
+                'customize-modal-title': 'Customize Your Persona List',
+                'customize-modal-instruction': 'Enter one person, character, or phrase per line. This will replace the default list for this session.',
+                'cancel-btn': 'Cancel',
+                'save-btn': 'Save List',
+                'list-saved-notification': 'Custom list saved!',
+                'customize-tip-title': 'Pro Tip!',
+                'customize-tip-body': 'Using it in a specific context? Generate your own list of possible options here. You may want to consider categories that might be more relevant to your context (ex. Philippine heroes, famous writers, characters in a novel, positions in an organization) - this can make your activity more educative and aligned to your learning goals.'
             },
             fil: {
                 'main-title': 'Mad Lib Generator',
                 'main-subtitle': 'Isang masayang laro para sa malikhaing pag-iisip!',
                 'topic-placeholder': "Maglagay ng paksa, e.g., 'Ang Internet'",
-                'generate-btn': 'Bumuo ng Prompt',
-                'ask-audience-btn': 'Tanungin ang Audience',
+                'generate-btn': 'Bumuo',
+                'ask-audience-btn': 'Audience',
+                'customize-btn': 'Customize',
                 'prompt-placeholder': 'Lalabas dito ang iyong prompt...',
                 'audience-ideas-title': 'Mga Ideya ng Audience',
                 'start-voting-btn': 'Simulan ang Pagboto!',
@@ -589,6 +635,13 @@
                 'audience-instruction-vote': 'Mayroon kang 3 boto. Pindutin para bumoto o alisin ang boto.',
                 'max-votes-notification': 'Nagamit mo na ang iyong 3 boto!',
                 'new-round-notification': 'Handa na para sa bagong round!',
+                'customize-modal-title': 'Magbigay ng Sariling Listahan',
+                'customize-modal-instruction': 'Maglagay ng isang tao, karakter, o parirala bawat linya. Ito ang papalit sa dating listahan.',
+                'cancel-btn': 'Cancel',
+                'save-btn': 'Save',
+                'list-saved-notification': 'List saved!',
+                'customize-tip-title': 'Pro Tip!',
+                'customize-tip-body': 'Gagamitin mo ba ito sa isang partikular na konteksto? Gumawa ng iyong sariling listahan dito. Maaari mong isaalang-alang ang mga kategorya na mas may kaugnayan sa iyong konteksto (hal. mga bayani ng Pilipinas, sikat na manunulat, mga karakter sa nobela, mga posisyon sa isang organisasyon) - para mas maging pang-edukasyon at angkop sa iyong mga layunin sa pag-aaral ang gawaing ito.'
             }
         };
 
@@ -708,12 +761,15 @@
             
             if (currentLanguage === 'en') {
                 topic = topicInput.value.trim() || "(your amazing topic)";
-                const randomPersona = personas_en[Math.floor(Math.random() * personas_en.length)];
+                const personaList = customPersonas.length > 0 ? customPersonas : personas_en;
+                const randomPersona = personaList[Math.floor(Math.random() * personaList.length)];
                 newPromptHTML = `Explain <strong class="inline-block align-middle text-blue-600 bg-blue-100 py-1 px-2 rounded-md mx-1">${topic}</strong> to <strong class="inline-block align-middle text-blue-600 bg-blue-100 py-1 px-2 rounded-md mx-1">${randomPersona}</strong>.`;
             } else {
                 topic = topicInput.value.trim() || "(iyong pambihirang paksa)";
-                const personaObj = personas_fil[Math.floor(Math.random() * personas_fil.length)];
-                newPromptHTML = `Ipaliwanag mo ang <strong class="inline-block align-middle text-blue-600 bg-blue-100 py-1 px-2 rounded-md mx-1">${topic}</strong> ${personaObj.marker} <strong class="inline-block align-middle text-blue-600 bg-blue-100 py-1 px-2 rounded-md mx-1">${personaObj.text}</strong>.`;
+                const personaList = customPersonas.length > 0 ? customPersonas.map(p => ({ text: p, marker: 'kay' })) : personas_fil;
+                const personaObj = personaList[Math.floor(Math.random() * personaList.length)];
+                const marker = customPersonas.length > 0 ? 'sa' : personaObj.marker; // Default marker for custom Filipino lists
+                newPromptHTML = `Ipaliwanag mo ang <strong class="inline-block align-middle text-blue-600 bg-blue-100 py-1 px-2 rounded-md mx-1">${topic}</strong> ${marker} <strong class="inline-block align-middle text-blue-600 bg-blue-100 py-1 px-2 rounded-md mx-1">${personaObj.text}</strong>.`;
             }
             
             resultElement.innerHTML = newPromptHTML;
@@ -814,3 +870,4 @@
     </script>
 </body>
 </html>
+
