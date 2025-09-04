@@ -31,6 +31,15 @@
         #notification {
             transition: transform 0.5s ease-in-out;
         }
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-5">
@@ -62,8 +71,11 @@
              <div id="submissions-grid" class="max-h-[400px] overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 bg-gray-100 rounded-lg no-scrollbar">
                 <!-- Bubbles will be inserted here -->
              </div>
-             <button id="startVotingBtn" class="hidden mt-6 w-full bg-red-500 text-white font-bold text-lg uppercase tracking-wider py-3 rounded-xl hover:bg-red-600 focus:outline-none focus:ring-4 focus:ring-red-300 shadow-lg">
+             <button id="startVotingBtn" class="hidden mt-6 w-full bg-purple-500 text-white font-bold text-lg uppercase tracking-wider py-3 rounded-xl hover:bg-purple-600 focus:outline-none focus:ring-4 focus:ring-purple-300 shadow-lg">
                 Start Voting!
+             </button>
+              <button id="endVotingBtn" class="hidden mt-6 w-full bg-red-500 text-white font-bold text-lg uppercase tracking-wider py-3 rounded-xl hover:bg-red-600 focus:outline-none focus:ring-4 focus:ring-red-300 shadow-lg">
+                Show Winner!
              </button>
         </div>
 
@@ -76,31 +88,58 @@
     
     <!-- Audience View Container -->
     <div id="audience-view" class="hidden bg-white rounded-2xl shadow-xl p-8 sm:p-12 text-center w-full max-w-md">
-        <h1 id="audience-title" class="text-3xl font-bold text-blue-600 mb-4">Join the Fun!</h1>
+        <h1 id="audience-title" class="text-3xl font-bold text-blue-600 mb-2">Join the Fun!</h1>
         <p id="audience-instruction" class="text-gray-500 mb-6">Submit your fun persona idea below.</p>
+        
         <div id="audience-submission-form">
             <input type="text" id="audienceInput" placeholder="e.g., 'a talking tarsier'" class="w-full px-5 py-4 text-lg border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-shadow mb-4">
             <button id="submitAudienceBtn" class="w-full bg-blue-600 text-white font-bold text-lg uppercase tracking-wider py-4 rounded-xl hover:bg-blue-700 shadow-lg">Submit</button>
         </div>
+
         <div id="audience-voting-area" class="hidden w-full text-left">
+             <p id="vote-counter" class="text-center font-bold text-lg text-purple-600 mb-4"></p>
             <!-- Audience voting options will appear here -->
         </div>
          <p id="thanks-message" class="hidden mt-6 text-xl font-semibold text-green-600">Thanks for your submission! Waiting for others...</p>
+         <div id="winner-display-audience" class="hidden text-center">
+            <p class="text-gray-600 mb-2">Voting has ended! The winner is:</p>
+            <div class="bg-yellow-100 border-2 border-yellow-300 p-4 rounded-lg">
+                <p id="winning-text-audience" class="text-xl font-bold text-yellow-800"></p>
+            </div>
+         </div>
     </div>
 
     <!-- QR Code Modal -->
-    <div id="qr-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4">
+    <div id="qr-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl p-8 text-center relative max-w-sm w-full">
             <button id="close-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
             <h2 class="text-2xl font-bold text-blue-600 mb-4">Scan to Join!</h2>
-            <p class="text-gray-600 mb-6">Ask your audience to scan this QR code with their phones to submit ideas.</p>
-            <div id="qrcode" class="flex justify-center"></div>
+            <p class="text-gray-600 mb-6">Ask your audience to scan this QR code or use the link below.</p>
+            <div id="qrcode" class="flex justify-center mb-4"></div>
+            <div class="relative">
+                <input type="text" id="session-link" readonly class="w-full bg-gray-100 border-2 border-gray-300 rounded-lg p-2 text-center text-sm">
+                <button id="copy-link-btn" class="absolute right-1 top-1/2 -translate-y-1/2 bg-blue-500 text-white text-xs font-bold py-1 px-3 rounded">COPY</button>
+            </div>
             <p id="session-id-display" class="mt-4 text-sm text-gray-500 font-mono"></p>
         </div>
     </div>
+    
+    <!-- Winner Modal -->
+    <div id="winner-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-10 text-center relative w-full max-w-md transform scale-95 transition-transform">
+             <h2 class="text-4xl font-bold text-yellow-500 mb-4">We have a winner!</h2>
+             <div class="bg-yellow-100 border-4 border-yellow-300 p-6 rounded-lg my-6">
+                <p id="winning-text" class="text-2xl font-bold text-gray-800"></p>
+                <p id="winning-votes" class="text-lg text-gray-600 mt-2"></p>
+             </div>
+             <button id="close-winner-modal" class="mt-4 bg-blue-600 text-white font-bold py-2 px-6 rounded-lg">Close</button>
+        </div>
+    </div>
+    <canvas id="confetti-canvas"></canvas>
+
 
     <!-- Notification Element -->
-    <div id="notification" class="hidden fixed top-5 right-5 bg-red-500 text-white py-3 px-5 rounded-lg shadow-lg" style="transform: translateX(120%);">
+    <div id="notification" class="hidden fixed top-5 right-5 bg-red-500 text-white py-3 px-5 rounded-lg shadow-lg z-50" style="transform: translateX(120%);">
         <p id="notification-message"></p>
     </div>
 
@@ -109,13 +148,15 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc, updateDoc, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc, updateDoc, getDocs, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- GLOBAL VARIABLES ---
         let db, auth, userId, currentSessionId;
         let unsubscribeSubmissions = null; 
         let unsubscribeSession = null;
-        let votedFor = null;
+        const MAX_VOTES = 3;
+        let votesUsed = 0;
+        let votedForIds = [];
 
         const appId = 'madlibs-app';
         
@@ -129,15 +170,25 @@
         const submissionsContainer = document.getElementById('submissions-container');
         const submissionsGrid = document.getElementById('submissions-grid');
         const startVotingBtn = document.getElementById('startVotingBtn');
+        const endVotingBtn = document.getElementById('endVotingBtn');
         const audienceInput = document.getElementById('audienceInput');
         const submitAudienceBtn = document.getElementById('submitAudienceBtn');
         const audienceSubmissionForm = document.getElementById('audience-submission-form');
         const audienceVotingArea = document.getElementById('audience-voting-area');
+        const voteCounter = document.getElementById('vote-counter');
         const thanksMessage = document.getElementById('thanks-message');
+        const winnerDisplayAudience = document.getElementById('winner-display-audience');
+        const winningTextAudience = document.getElementById('winning-text-audience');
         const qrModal = document.getElementById('qr-modal');
         const closeModalBtn = document.getElementById('close-modal');
         const qrcodeContainer = document.getElementById('qrcode');
+        const sessionLinkInput = document.getElementById('session-link');
+        const copyLinkBtn = document.getElementById('copy-link-btn');
         const sessionIdDisplay = document.getElementById('session-id-display');
+        const winnerModal = document.getElementById('winner-modal');
+        const winningText = document.getElementById('winning-text');
+        const winningVotes = document.getElementById('winning-votes');
+        const closeWinnerModal = document.getElementById('close-winner-modal');
         const notification = document.getElementById('notification');
         const notificationMessage = document.getElementById('notification-message');
         const connectionStatus = document.getElementById('connection-status');
@@ -158,31 +209,22 @@
                 if (!firebaseConfig.apiKey) {
                    throw new Error("Firebase config is missing.");
                 }
-
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
                 updateConnectionStatus(true);
-
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         userId = user.uid;
-                        main();
                     } else {
-                        await signInAnonymously(auth).catch(err => {
-                            console.error("Anonymous sign-in failed:", err);
-                            updateConnectionStatus(false);
-                            showNotification("Could not authenticate. Audience features may fail.", "error");
-                            main(); // Proceed without a user
-                        });
+                        await signInAnonymously(auth);
                     }
+                    main();
                 });
             } catch (e) {
                 console.error("Firebase initialization failed:", e.message);
                 updateConnectionStatus(false);
-                db = null;
-                auth = null;
-                main(); // Run in offline mode if firebase fails
+                main(); 
             }
         }
 
@@ -190,7 +232,6 @@
         function main() {
             const params = new URLSearchParams(window.location.search);
             currentSessionId = params.get('session');
-
             if (currentSessionId) {
                 initializeAudienceView();
             } else {
@@ -201,51 +242,45 @@
         // --- PRESENTER LOGIC ---
         function initializePresenterView() {
             presenter_view.classList.remove('hidden');
+            audience_view.classList.add('hidden');
             generateBtn.addEventListener('click', generateMadLib);
             topicInput.addEventListener('keyup', (event) => event.key === 'Enter' && generateMadLib());
             askAudienceBtn.addEventListener('click', handleAskAudience);
             closeModalBtn.addEventListener('click', () => qrModal.classList.add('hidden'));
             startVotingBtn.addEventListener('click', handleStartVoting);
+            endVotingBtn.addEventListener('click', handleEndVoting);
+            closeWinnerModal.addEventListener('click', () => {
+                winnerModal.classList.add('hidden');
+                winnerModal.querySelector('div').classList.add('scale-95');
+            });
+            copyLinkBtn.addEventListener('click', copySessionLink);
         }
 
         async function handleAskAudience() {
-            if (!db) {
-                showNotification("Real-time features are disabled. Check Firebase config.", 'error');
-                return;
-            }
+            if (!db) { return showNotification("Real-time features are disabled.", 'error');}
             currentSessionId = generateSessionId();
             const sessionRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions`, currentSessionId);
-            await setDoc(sessionRef, { votingOpen: false, createdAt: new Date() });
+            await setDoc(sessionRef, { votingOpen: false, winnerAnnounced: false, createdAt: new Date() });
 
-            // Use the specific GitHub Pages URL provided by the user
             const url = `http://galvinradleyngo.github.io/madlib/?session=${currentSessionId}`;
             qrcodeContainer.innerHTML = '';
-            new QRCode(qrcodeContainer, { text: url, width: 200, height: 200 });
+            new QRCode(qrcodeContainer, { text: url, width: 180, height: 180 });
+            sessionLinkInput.value = url;
             sessionIdDisplay.textContent = `Session ID: ${currentSessionId}`;
             qrModal.classList.remove('hidden');
-            
             listenForSubmissions();
         }
 
         function listenForSubmissions() {
             submissionsContainer.classList.remove('hidden');
-            submissionsGrid.innerHTML = ''; // Clear previous submissions
+            submissionsGrid.innerHTML = '';
             const submissionsRef = collection(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`);
-            
             if(unsubscribeSubmissions) unsubscribeSubmissions();
             unsubscribeSubmissions = onSnapshot(submissionsRef, (snapshot) => {
                 startVotingBtn.classList.toggle('hidden', snapshot.empty);
                 snapshot.docChanges().forEach((change) => {
-                    if (change.type === "added") {
-                        renderBubble(change.doc.id, change.doc.data(), 'presenter');
-                    }
-                    if (change.type === "modified") {
-                         const bubble = document.getElementById(`bubble-presenter-${change.doc.id}`);
-                         if(bubble) {
-                            const voteCount = bubble.querySelector('.vote-count');
-                            if(voteCount) voteCount.textContent = change.doc.data().votes || 0;
-                         }
-                    }
+                    if (change.type === "added")   renderBubble(change.doc.id, change.doc.data(), 'presenter');
+                    if (change.type === "modified") updateBubbleVotes(change.doc.id, change.doc.data());
                 });
             });
         }
@@ -254,12 +289,39 @@
              const sessionRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions`, currentSessionId);
              await updateDoc(sessionRef, { votingOpen: true });
              startVotingBtn.classList.add('hidden');
-             const allBubbles = submissionsGrid.querySelectorAll('.bubble');
-             allBubbles.forEach(b => b.classList.add('pointer-events-none')); // Disable voting for presenter
+             endVotingBtn.classList.remove('hidden');
+        }
+
+        async function handleEndVoting() {
+            endVotingBtn.disabled = true;
+            const submissionsRef = collection(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`);
+            const snapshot = await getDocs(submissionsRef);
+            if (snapshot.empty) {
+                endVotingBtn.disabled = false;
+                return;
+            }
+
+            let winner = { votes: -1 };
+            snapshot.forEach(doc => {
+                if (doc.data().votes > winner.votes) {
+                    winner = { id: doc.id, ...doc.data() };
+                }
+            });
+
+            const sessionRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions`, currentSessionId);
+            await updateDoc(sessionRef, { winnerAnnounced: true, winner: winner });
+            
+            winningText.textContent = `"${winner.text}"`;
+            winningVotes.textContent = `${winner.votes} Votes`;
+            winnerModal.classList.remove('hidden');
+            setTimeout(() => winnerModal.querySelector('div').classList.remove('scale-95'), 10);
+            
+            triggerConfetti();
         }
 
         // --- AUDIENCE LOGIC ---
         function initializeAudienceView() {
+            presenter_view.classList.add('hidden');
             audience_view.classList.remove('hidden');
             submitAudienceBtn.addEventListener('click', handleAudienceSubmit);
             audienceInput.addEventListener('keyup', (event) => event.key === 'Enter' && handleAudienceSubmit());
@@ -280,13 +342,23 @@
              const sessionRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions`, currentSessionId);
              if(unsubscribeSession) unsubscribeSession();
              unsubscribeSession = onSnapshot(sessionRef, (docSnap) => {
-                 if (docSnap.exists() && docSnap.data().votingOpen) {
-                     // Voting has started, switch to voting view
+                 if (!docSnap.exists()) return;
+                 const sessionData = docSnap.data();
+
+                 if (sessionData.winnerAnnounced) {
+                    audienceSubmissionForm.classList.add('hidden');
+                    thanksMessage.classList.add('hidden');
+                    audienceVotingArea.classList.add('hidden');
+                    winnerDisplayAudience.classList.remove('hidden');
+                    winningTextAudience.textContent = `"${sessionData.winner.text}"`;
+                    if(unsubscribeSubmissions) unsubscribeSubmissions();
+                 } else if (sessionData.votingOpen) {
                      thanksMessage.classList.add('hidden');
                      audienceSubmissionForm.classList.add('hidden');
                      audienceVotingArea.classList.remove('hidden');
                      document.getElementById('audience-title').textContent = "Vote for your Favorite!";
-                     document.getElementById('audience-instruction').textContent = "Tap on an idea to cast your vote.";
+                     document.getElementById('audience-instruction').textContent = "You have 3 votes. Tap to vote or un-vote.";
+                     updateVoteCounter();
                      loadVotingOptions();
                  }
              });
@@ -297,70 +369,75 @@
             if(unsubscribeSubmissions) unsubscribeSubmissions();
             unsubscribeSubmissions = onSnapshot(submissionsRef, (snapshot) => {
                 audienceVotingArea.innerHTML = '';
-                snapshot.forEach(doc => {
-                    renderBubble(doc.id, doc.data(), 'audience');
-                });
+                // Re-add counter as innerHTML is cleared
+                audienceVotingArea.appendChild(voteCounter); 
+                updateVoteCounter();
+                snapshot.forEach(doc => renderBubble(doc.id, doc.data(), 'audience'));
             });
         }
 
         async function handleVote(docId) {
-             if (votedFor === docId) return; // Already voted for this one
              if (!db) return;
+             const submissionRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`, docId);
+             const isAlreadyVoted = votedForIds.includes(docId);
 
-             const batch = writeBatch(db);
-             
-             // New vote
-             const newVoteRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`, docId);
-             const submissionDoc = await getDoc(newVoteRef);
-             if (submissionDoc.exists()) {
-                const currentVotes = submissionDoc.data().votes || 0;
-                batch.update(newVoteRef, { votes: currentVotes + 1 });
+             if (isAlreadyVoted) {
+                 // Un-voting
+                 await updateDoc(submissionRef, { votes: increment(-1) });
+                 votedForIds = votedForIds.filter(id => id !== docId);
+                 votesUsed--;
+             } else {
+                 // Voting
+                 if (votesUsed >= MAX_VOTES) {
+                     return showNotification("You have used all 3 votes!", 'error');
+                 }
+                 await updateDoc(submissionRef, { votes: increment(1) });
+                 votedForIds.push(docId);
+                 votesUsed++;
              }
-             
-             // Remove previous vote if exists
-             if (votedFor) {
-                const oldVoteRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`, votedFor);
-                const oldSubmissionDoc = await getDoc(oldVoteRef);
-                if (oldSubmissionDoc.exists()) {
-                    const oldVotes = oldSubmissionDoc.data().votes || 0;
-                    if(oldVotes > 0) batch.update(oldVoteRef, { votes: oldVotes - 1 });
-                }
-             }
-             
-             await batch.commit();
-             votedFor = docId; // Mark that user has voted
-             
-             // Update UI to show selection
-             const allBubbles = audienceVotingArea.querySelectorAll('.bubble-vote');
-             allBubbles.forEach(b => b.classList.remove('ring-4', 'ring-green-400'));
-             document.getElementById(`bubble-audience-${docId}`).classList.add('ring-4', 'ring-green-400');
+             updateVoteCounter();
+             updateBubbleSelection(docId, !isAlreadyVoted);
         }
 
         // --- SHARED UI LOGIC ---
         function renderBubble(id, data, viewType) {
              const isPresenter = viewType === 'presenter';
              const container = isPresenter ? submissionsGrid : audienceVotingArea;
+             const bubble = document.createElement('div');
+             bubble.id = `bubble-${viewType}-${id}`;
 
-             let bubble = document.getElementById(`bubble-${viewType}-${id}`);
-             if (!bubble) {
-                bubble = document.createElement('div');
-                bubble.id = `bubble-${viewType}-${id}`;
-                if (isPresenter) {
-                    bubble.className = "bubble bg-white p-4 rounded-lg shadow text-center break-words";
-                } else {
-                    bubble.className = "bubble-vote w-full bg-white p-4 my-2 rounded-lg shadow text-left break-words cursor-pointer transition-transform hover:scale-105";
-                    bubble.addEventListener('click', () => handleVote(id));
+             if (isPresenter) {
+                 bubble.className = "bubble bg-white p-4 rounded-lg shadow text-center break-words";
+                 bubble.innerHTML = `<p class="text-gray-800 text-lg">${data.text}</p><span class="vote-count font-bold text-xl text-blue-600 mt-2 block">${data.votes || 0}</span>`;
+             } else {
+                 bubble.className = "bubble-vote w-full bg-white p-4 my-2 rounded-lg shadow text-left break-words cursor-pointer transition-transform hover:scale-105";
+                 bubble.innerHTML = `<span class="vote-count float-right font-bold text-blue-600 text-lg">${data.votes || 0}</span><p class="text-gray-800">${data.text}</p>`;
+                 bubble.addEventListener('click', () => handleVote(id));
+                 if (votedForIds.includes(id)) {
+                    bubble.classList.add('ring-4', 'ring-purple-400');
+                 }
+             }
+             container.appendChild(bubble);
+        }
+
+        function updateBubbleVotes(docId, data) {
+            ['presenter', 'audience'].forEach(viewType => {
+                const bubble = document.getElementById(`bubble-${viewType}-${docId}`);
+                if(bubble) {
+                    const voteCountEl = bubble.querySelector('.vote-count');
+                    if(voteCountEl) voteCountEl.textContent = data.votes || 0;
                 }
-                container.appendChild(bubble);
-             }
-             
-             bubble.innerHTML = isPresenter ? 
-                `<p class="text-gray-800 text-lg">${data.text}</p><span class="vote-count font-bold text-xl text-blue-600 mt-2 block">${data.votes || 0}</span>` : 
-                `<span class="float-right font-bold text-blue-600 text-lg">${data.votes || 0}</span><p class="text-gray-800">${data.text}</p>`;
+            });
+        }
 
-             if(votedFor === id && !isPresenter) {
-                bubble.classList.add('ring-4', 'ring-green-400');
-             }
+        function updateBubbleSelection(docId, isSelected) {
+            const bubble = document.getElementById(`bubble-audience-${docId}`);
+            if (bubble) bubble.classList.toggle('ring-4', isSelected);
+            if (bubble) bubble.classList.toggle('ring-purple-400', isSelected);
+        }
+
+        function updateVoteCounter() {
+            voteCounter.textContent = `Votes Remaining: ${MAX_VOTES - votesUsed}`;
         }
         
         // --- OFFLINE/CLASSIC LOGIC ---
@@ -380,34 +457,81 @@
             return Math.random().toString(36).substring(2, 8).toUpperCase();
         }
 
+        function copySessionLink() {
+            sessionLinkInput.select();
+            document.execCommand('copy');
+            copyLinkBtn.textContent = 'COPIED!';
+            setTimeout(() => { copyLinkBtn.textContent = 'COPY'; }, 2000);
+        }
+
         function updateConnectionStatus(isConnected) {
-            if (isConnected) {
-                connectionStatus.classList.remove('bg-red-500', 'bg-gray-400');
-                connectionStatus.classList.add('bg-green-500');
-                connectionStatus.title = "Connected to Firebase";
-            } else {
-                connectionStatus.classList.remove('bg-green-500', 'bg-gray-400');
-                connectionStatus.classList.add('bg-red-500');
-                connectionStatus.title = "Disconnected from Firebase. Real-time features are offline.";
-            }
+            connectionStatus.classList.toggle('bg-green-500', isConnected);
+            connectionStatus.classList.toggle('bg-red-500', !isConnected);
+            connectionStatus.title = isConnected ? "Connected to Firebase" : "Disconnected. Real-time features are offline.";
         }
 
         function showNotification(message, type = 'error') {
             notificationMessage.textContent = message;
-            
-            notification.classList.remove('bg-red-500', 'bg-green-500');
-            notification.classList.add(type === 'error' ? 'bg-red-500' : 'bg-green-500');
+            notification.classList.toggle('bg-red-500', type === 'error');
+            notification.classList.toggle('bg-green-500', type !== 'error');
             notification.classList.remove('hidden');
+            setTimeout(() => { notification.style.transform = 'translateX(0)'; }, 10);
+            setTimeout(() => { notification.style.transform = 'translateX(120%)';}, 4000);
+        }
 
-            // Animate in
-            setTimeout(() => {
-                 notification.style.transform = 'translateX(0)';
-            }, 10);
+        function triggerConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            let confetti = [];
+            const confettiCount = 200;
+            const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800'];
 
-            // Animate out after a delay
-            setTimeout(() => {
-                notification.style.transform = 'translateX(120%)';
-            }, 4000);
+            for (let i = 0; i < confettiCount; i++) {
+                confetti.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    size: Math.random() * 5 + 2,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    speed: Math.random() * 3 + 2,
+                    angle: Math.random() * 360,
+                    spin: (Math.random() - 0.5) * 10,
+                });
+            }
+
+            function drawConfetti() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                confetti.forEach((p, i) => {
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.angle * Math.PI / 180);
+                    ctx.rect(-p.size / 2, -p.size / 2, p.size, p.size);
+                    ctx.fill();
+                    ctx.restore();
+                    
+                    p.y += p.speed;
+                    p.angle += p.spin;
+
+                    if (p.y > canvas.height) {
+                        confetti.splice(i, 1);
+                    }
+                });
+            }
+
+            let animationFrameId;
+            function animate() {
+                drawConfetti();
+                if (confetti.length > 0) {
+                    animationFrameId = requestAnimationFrame(animate);
+                } else {
+                    ctx.clearRect(0,0, canvas.width, canvas.height);
+                }
+            }
+            animate();
+            setTimeout(() => cancelAnimationFrame(animationFrameId), 5000); // Stop after 5s
         }
 
         // Start the application
