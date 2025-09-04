@@ -47,9 +47,12 @@
     <!-- Presenter View Container -->
     <div id="presenter-view" class="relative bg-white rounded-2xl shadow-xl p-8 sm:p-12 text-center w-full max-w-3xl transform transition-all">
         <div class="absolute top-5 right-5 flex items-center gap-4">
-            <button id="language-toggle-btn" title="Switch Language" class="text-3xl focus:outline-none rounded-full transition-transform hover:scale-110 active:scale-100">
-                🇵🇭
-            </button>
+            <!-- Language Toggle Switch -->
+            <div id="language-toggle-btn" class="relative bg-gray-200 rounded-full p-1 flex items-center cursor-pointer w-24 h-10">
+                <div id="language-toggle-slider" class="absolute bg-blue-600 h-8 w-1/2 rounded-full transition-transform duration-300 ease-in-out transform"></div>
+                <span class="w-1/2 text-center z-10 font-semibold text-sm transition-colors" id="lang-en">EN</span>
+                <span class="w-1/2 text-center z-10 font-semibold text-sm transition-colors" id="lang-fil">FIL</span>
+            </div>
             <button id="persistent-refresh-btn" title="Start a New Round" class="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 rounded-full p-2 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64M3.51 15A9 9 0 0 0 18.36 18.36"></path></svg>
             </button>
@@ -276,6 +279,7 @@
             presenter_view.classList.remove('hidden');
             audience_view.classList.add('hidden');
             languageToggleBtn.addEventListener('click', toggleLanguage);
+            updateLanguageToggleState();
             persistentRefreshBtn.addEventListener('click', resetForNewRound);
             generateBtn.addEventListener('click', generateMadLib);
             topicInput.addEventListener('keyup', (event) => event.key === 'Enter' && generateMadLib());
@@ -590,9 +594,30 @@
 
         function toggleLanguage() {
             currentLanguage = currentLanguage === 'en' ? 'fil' : 'en';
+            updateLanguageToggleState();
             updateUIText();
             if (topicInput.value || resultElement.innerHTML.includes('<strong>')) {
                 generateMadLib();
+            }
+        }
+
+        function updateLanguageToggleState() {
+            const slider = document.getElementById('language-toggle-slider');
+            const langEn = document.getElementById('lang-en');
+            const langFil = document.getElementById('lang-fil');
+
+            if (currentLanguage === 'fil') {
+                slider.style.transform = 'translateX(100%)';
+                langEn.classList.remove('text-white');
+                langEn.classList.add('text-gray-800');
+                langFil.classList.add('text-white');
+                langFil.classList.remove('text-gray-800');
+            } else {
+                slider.style.transform = 'translateX(0)';
+                langFil.classList.remove('text-white');
+                langFil.classList.add('text-gray-800');
+                langEn.classList.add('text-white');
+                langEn.classList.remove('text-gray-800');
             }
         }
         
