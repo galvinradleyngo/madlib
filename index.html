@@ -150,7 +150,7 @@
                 <p class="font-bold" data-key="customize-tip-title">Pro Tip!</p>
                 <p class="text-xs" data-key="customize-tip-body">Using it in a specific context? Generate your own list of possible options here. You may want to consider categories that might be more relevant to your context (ex. Philippine heroes, famous writers, characters in a novel, positions in an organization) - this can make your activity more educative and aligned to your learning goals.</p>
             </div>
-            <textarea id="custom-list-textarea" class="w-full h-48 p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Jollibee&#10;Darna&#10;a moody teenager..."></textarea>
+            <textarea id="custom-list-textarea" data-key-placeholder="customize-textarea-placeholder" class="w-full h-48 p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Jollibee, Darna, a moody teenager...&#10;(separated by commas or new lines)"></textarea>
             <div class="flex justify-end gap-4 mt-4">
                 <button id="close-customize-modal" class="bg-gray-200 text-gray-800 font-bold py-2 px-5 rounded-lg" data-key="cancel-btn">Cancel</button>
                 <button id="save-custom-list" class="bg-blue-600 text-white font-bold py-2 px-5 rounded-lg" data-key="save-btn">Save List</button>
@@ -333,7 +333,7 @@
             const listContent = customListTextarea.value.trim();
             
             if (listContent) {
-                customPersonas = listContent.split('\n').map(p => p.trim()).filter(p => p);
+                customPersonas = listContent.split(/[\n,]/).map(p => p.trim()).filter(p => p);
                 customListName = listName || 'Custom List';
                 showNotification(uiTranslations[currentLanguage]['list-saved-notification'], 'success');
             } else {
@@ -624,7 +624,8 @@
                 'customize-tip-title': 'Pro Tip!',
                 'customize-tip-body': 'Using it in a specific context? Generate your own list of possible options here. You may want to consider categories that might be more relevant to your context (ex. Philippine heroes, famous writers, characters in a novel, positions in an organization) - this can make your activity more educative and aligned to your learning goals.',
                 'custom-list-name-placeholder': 'Enter a name for your list (e.g., Philippine Heroes)',
-                'using-list': 'Using list:'
+                'using-list': 'Using list:',
+                 'customize-textarea-placeholder': 'Jollibee, Darna, a moody teenager...\n(separated by commas or new lines)'
             },
             fil: {
                 'main-title': 'Mad Lib Generator',
@@ -666,7 +667,8 @@
                 'customize-tip-title': 'Pro Tip!',
                 'customize-tip-body': 'Gagamitin mo ba ito sa isang partikular na konteksto? Gumawa ng iyong sariling listahan dito. Maaari mong isaalang-alang ang mga kategorya na mas may kaugnayan sa iyong konteksto (hal. mga bayani ng Pilipinas, sikat na manunulat, mga karakter sa nobela, mga posisyon sa isang organisasyon) - para mas maging pang-edukasyon at angkop sa iyong mga layunin sa pag-aaral ang gawaing ito.',
                 'custom-list-name-placeholder': 'Maglagay ng pangalan para sa listahan (e.g., Mga Bayani ng Pilipinas)',
-                'using-list': 'Gamit ang listahan:'
+                'using-list': 'Gamit ang listahan:',
+                'customize-textarea-placeholder': 'Jollibee, Darna, isang mainiting tinedyer...\n(paghiwalayin ng kuwit o bagong linya)'
             }
         };
 
@@ -709,6 +711,7 @@
                 const key = el.dataset.keyPlaceholder;
                 if(translations[key]) el.placeholder = translations[key];
             });
+            updateCustomListIndicator();
         }
         
         // --- OFFLINE/CLASSIC LOGIC & DATA ---
