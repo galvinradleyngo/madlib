@@ -68,8 +68,9 @@
         </div>
 
 
-        <footer class="mt-8 text-sm text-gray-400">
-            Built with ❤️ in Quezon City
+        <footer class="mt-8 text-sm text-gray-400 flex justify-center items-center gap-4">
+            <span>Built with ❤️ in Quezon City</span>
+            <span id="connection-status" class="w-3 h-3 rounded-full bg-gray-400" title="Connection Status"></span>
         </footer>
     </div>
     
@@ -116,7 +117,7 @@
         let unsubscribeSession = null;
         let votedFor = null;
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'madlibs-app';
+        const appId = 'madlibs-app';
         
         // --- DOM ELEMENTS ---
         const presenter_view = document.getElementById('presenter-view');
@@ -139,25 +140,48 @@
         const sessionIdDisplay = document.getElementById('session-id-display');
         const notification = document.getElementById('notification');
         const notificationMessage = document.getElementById('notification-message');
+        const connectionStatus = document.getElementById('connection-status');
        
         // --- FIREBASE SETUP ---
         async function setupFirebase() {
+            // Hardcoded Firebase configuration provided by the user.
+            const firebaseConfig = {
+              apiKey: "AIzaSyBkbkMOuCCPMGapoJ5tIGnDUE7IZGhk-RA",
+              authDomain: "madlibs-76c98.firebaseapp.com",
+              projectId: "madlibs-76c98",
+              storageBucket: "madlibs-76c98.appspot.com",
+              messagingSenderId: "537595073122",
+              appId: "1:537595073122:web:ba3e61e2809db02982773b"
+            };
+
             try {
-                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                if (!firebaseConfig.apiKey) {
+                   throw new Error("Firebase config is missing.");
+                }
+
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
+                updateConnectionStatus(true);
 
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         userId = user.uid;
                         main();
                     } else {
-                        await signInAnonymously(auth);
+                        await signInAnonymously(auth).catch(err => {
+                            console.error("Anonymous sign-in failed:", err);
+                            updateConnectionStatus(false);
+                            showNotification("Could not authenticate. Audience features may fail.", "error");
+                            main(); // Proceed without a user
+                        });
                     }
                 });
             } catch (e) {
-                console.error("Firebase config not found or invalid. Using offline mode.", e);
+                console.error("Firebase initialization failed:", e.message);
+                updateConnectionStatus(false);
+                db = null;
+                auth = null;
                 main(); // Run in offline mode if firebase fails
             }
         }
@@ -186,7 +210,7 @@
 
         async function handleAskAudience() {
             if (!db) {
-                showNotification("Real-time features are disabled.", 'error');
+                showNotification("Real-time features are disabled. Check Firebase config.", 'error');
                 return;
             }
             currentSessionId = generateSessionId();
@@ -354,6 +378,18 @@
         // --- UTILITY FUNCTIONS ---
         function generateSessionId() {
             return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        function updateConnectionStatus(isConnected) {
+            if (isConnected) {
+                connectionStatus.classList.remove('bg-red-500', 'bg-gray-400');
+                connectionStatus.classList.add('bg-green-500');
+                connectionStatus.title = "Connected to Firebase";
+            } else {
+                connectionStatus.classList.remove('bg-green-500', 'bg-gray-400');
+                connectionStatus.classList.add('bg-red-500');
+                connectionStatus.title = "Disconnected from Firebase. Real-time features are offline.";
+            }
         }
 
         function showNotification(message, type = 'error') {
