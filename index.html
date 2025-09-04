@@ -77,6 +77,9 @@
               <button id="endVotingBtn" class="hidden mt-6 w-full bg-red-500 text-white font-bold text-lg uppercase tracking-wider py-3 rounded-xl hover:bg-red-600 focus:outline-none focus:ring-4 focus:ring-red-300 shadow-lg">
                 Show Winner!
              </button>
+             <button id="newRoundBtn" class="hidden mt-6 w-full bg-gray-600 text-white font-bold text-lg uppercase tracking-wider py-3 rounded-xl hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-300 shadow-lg">
+                New Round
+             </button>
         </div>
 
 
@@ -171,6 +174,7 @@
         const submissionsGrid = document.getElementById('submissions-grid');
         const startVotingBtn = document.getElementById('startVotingBtn');
         const endVotingBtn = document.getElementById('endVotingBtn');
+        const newRoundBtn = document.getElementById('newRoundBtn');
         const audienceInput = document.getElementById('audienceInput');
         const submitAudienceBtn = document.getElementById('submitAudienceBtn');
         const audienceSubmissionForm = document.getElementById('audience-submission-form');
@@ -249,6 +253,7 @@
             closeModalBtn.addEventListener('click', () => qrModal.classList.add('hidden'));
             startVotingBtn.addEventListener('click', handleStartVoting);
             endVotingBtn.addEventListener('click', handleEndVoting);
+            newRoundBtn.addEventListener('click', resetForNewRound);
             closeWinnerModal.addEventListener('click', () => {
                 winnerModal.classList.add('hidden');
                 winnerModal.querySelector('div').classList.add('scale-95');
@@ -317,6 +322,32 @@
             setTimeout(() => winnerModal.querySelector('div').classList.remove('scale-95'), 10);
             
             triggerConfetti();
+            endVotingBtn.classList.add('hidden');
+            newRoundBtn.classList.remove('hidden');
+            endVotingBtn.disabled = false;
+        }
+
+        function resetForNewRound() {
+            winnerModal.classList.add('hidden');
+            submissionsContainer.classList.add('hidden');
+            endVotingBtn.classList.add('hidden');
+            newRoundBtn.classList.add('hidden');
+            startVotingBtn.classList.add('hidden');
+
+            submissionsGrid.innerHTML = '';
+            resultElement.innerHTML = 'Your prompt will appear here...';
+            topicInput.value = '';
+            
+            if (unsubscribeSubmissions) {
+                unsubscribeSubmissions();
+                unsubscribeSubmissions = null;
+            }
+            if (unsubscribeSession) {
+                unsubscribeSession();
+                unsubscribeSession = null;
+            }
+            currentSessionId = null;
+            showNotification("Ready for a new round!", 'success');
         }
 
         // --- AUDIENCE LOGIC ---
@@ -449,7 +480,7 @@
             let topic = topicInput.value.trim() || "(your amazing topic)";
             const randomIndex = Math.floor(Math.random() * personas.length);
             const randomPersona = personas[randomIndex];
-            resultElement.innerHTML = `Explain <strong class="text-blue-600 bg-blue-100 py-1 px-2 rounded-md">${topic}</strong> to <strong class="text-blue-600 bg-blue-100 py-1 px-2 rounded-md">${randomPersona}</strong>.`;
+            resultElement.innerHTML = `Explain <strong class="inline-block align-middle text-blue-600 bg-blue-100 py-1 px-2 rounded-md mx-1">${topic}</strong> to <strong class="inline-block align-middle text-blue-600 bg-blue-100 py-1 px-2 rounded-md mx-1">${randomPersona}</strong>.`;
         }
 
         // --- UTILITY FUNCTIONS ---
