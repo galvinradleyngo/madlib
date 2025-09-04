@@ -144,7 +144,7 @@
     <div id="customize-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl p-8 text-left relative max-w-md w-full">
             <h2 class="text-2xl font-bold text-blue-600 mb-2" data-key="customize-modal-title">Customize Your Persona List</h2>
-            <p class="text-gray-600 mb-4" data-key="customize-modal-instruction">Enter one person, character, or phrase per line. This will replace the default list for this session.</p>
+            <p class="text-gray-600 mb-4 text-sm" data-key="customize-modal-instruction">Enter one person, character, or phrase per line. This will replace the default list for this session.</p>
             <input type="text" id="custom-list-name" data-key-placeholder="custom-list-name-placeholder" placeholder="Enter a name for your list (e.g., Philippine Heroes)" class="w-full px-4 py-2 text-md border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4">
             <div class="mb-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-3 rounded-r-lg" role="alert">
                 <p class="font-bold" data-key="customize-tip-title">Pro Tip!</p>
@@ -617,7 +617,7 @@
                 'max-votes-notification': 'You have used all 3 votes!',
                 'new-round-notification': 'Ready for a new round!',
                 'customize-modal-title': 'Customize Your Persona List',
-                'customize-modal-instruction': 'Enter one person, character, or phrase per line. This will replace the default list for this session.',
+                'customize-modal-instruction': 'Enter one person, character, or phrase per line. This will replace the default list. <br><strong>Tip:</strong> For names, please use capital letters (e.g., Jose Rizal) so the correct grammar is used.',
                 'cancel-btn': 'Cancel',
                 'save-btn': 'Save List',
                 'list-saved-notification': 'Custom list saved!',
@@ -660,7 +660,7 @@
                 'max-votes-notification': 'Nagamit mo na ang iyong 3 boto!',
                 'new-round-notification': 'Handa na para sa bagong round!',
                 'customize-modal-title': 'Magbigay ng Sariling Listahan',
-                'customize-modal-instruction': 'Maglagay ng isang tao, karakter, o parirala bawat linya. Ito ang papalit sa dating listahan.',
+                'customize-modal-instruction': 'Maglagay ng isang tao, karakter, o parirala bawat linya. Ito ang papalit sa dating listahan. <br><strong>Tip:</strong> Para sa mga pangalan, pakigamit ng malaking titik (e.g., Jose Rizal) para magamit ang tamang balarila.',
                 'cancel-btn': 'Cancel',
                 'save-btn': 'Save',
                 'list-saved-notification': 'List saved!',
@@ -732,10 +732,11 @@
         }
         
         const personas_en = [
-             'a 5-year-old kid', 'a moody teenager', 'a wise 90-year-old lola', 'a "Tita" of Manila', 'a recent college graduate', 'a tired new parent', 'a jeepney driver stuck in EDSA traffic', 'a friendly call center agent on their break', 'a "tindera" at a sari-sari store', 'a hardworking rice farmer from the province', 'a mall security guard', 'an OFW on a video call', 'a GrabFood delivery rider', 'a NASA astronaut', 'a skeptical scientist', 'a dramatic theater actor', 'a busy corporate lawyer', 'a world-famous chef', 'a software developer who only speaks in code', 'a very confused historian', 
-             'Jollibee', 'Darna', 'Cardo Dalisay from "Ang Probinsyano"', 'a certified "Marites" (neighborhood gossiper)', 'Vice Ganda', 'Manny Pacquiao', 'Hidilyn Diaz', 'Catriona Gray', 'Heart Evangelista', 'Jose Rizal', 'Heneral Luna', 'Popoy from "One More Chance"', 'a KathNiel super-fan', 'a K-Pop idol from BTS', 'a member of Blackpink', 'Taylor Swift', 'Iron Man', 'Elsa from Frozen', 'SpongeBob SquarePants', 'Pikachu', 'Harry Potter', 'Luffy from One Piece', 'a Jedi Knight', 
-             'a character from a Jose Rizal novel', 'an alien who just landed in Quiapo', 'a time traveler from the Spanish colonial era', 'a talking tarsier from Bohol', 'your future self from the year 2050', 'a ghost from Balete Drive', 'a super-intelligent AI', 'a golden retriever', 'a cat that is judging you', 'someone who just woke up from a 20-year coma', 'a conspiracy theorist', 'a hopeless romantic', 'a complete cynic', 'a dragon', 'a mermaid from the seas of Palawan', 'someone who has never used a smartphone',
-             'a TikTok influencer filming a video', 'a "plantita" talking to her favorite plant', 'a "barker" at a jeepney terminal', 'a street food vendor selling isaw', 'a professional Mobile Legends player', 'Batman', 'your pet dog who suddenly understands English', 'a first-time tourist in Manila', 'a beauty pageant contestant', 'a pirate who just found treasure', 'a vampire who is afraid of blood', 'Santa Claus on his summer vacation', 'a PBA basketball player', 'a BPO employee on a night shift', 'a history professor', 'a student cramming for an exam', 'a fortune teller', 'a stand-up comedian', 'a famous vlogger doing a collab', 'Jessica Soho', 'Apo Whang-od', 'a food blogger reviewing crispy pata'
+            'a 5-year-old kid', 'a moody teenager', 'a wise 90-year-old lola', 'a "Tita" of Manila', 'a recent college graduate', 'a tired new parent', 'a jeepney driver stuck in EDSA traffic', 'a friendly call center agent on their break', 'a "tindera" at a sari-sari store', 'a hardworking rice farmer from the province', 'a mall security guard', 'an OFW on a video call', 'a GrabFood delivery rider', 'a NASA astronaut', 'a skeptical scientist', 'a dramatic theater actor', 'a busy corporate lawyer', 'a world-famous chef', 'a software developer who only speaks in code', 'a very confused historian', 
+            'Jollibee', 'Darna', 'Cardo Dalisay from "Ang Probinsyano"', 'a certified "Marites" (neighborhood gossiper)', 'Vice Ganda', 'Manny Pacquiao', 'Hidilyn Diaz', 'Catriona Gray', 'Heart Evangelista', 'Jose Rizal', 'Heneral Luna', 'Popoy from "One More Chance"', 'a KathNiel super-fan', 'a K-Pop idol from BTS', 'a member of Blackpink', 'Taylor Swift', 'Iron Man', 'Elsa from Frozen', 'SpongeBob SquarePants', 'Harry Potter', 'Luffy from One Piece', 'a Jedi Knight', 
+            'a character from a Jose Rizal novel', 'an alien who just landed in Quiapo', 'a time traveler from the Spanish colonial era', 'your future self from the year 2050', 'a ghost from Balete Drive', 'a super-intelligent AI', 'someone who just woke up from a 20-year coma', 'a conspiracy theorist', 'a hopeless romantic', 'a complete cynic', 'someone who has never used a smartphone',
+            'a TikTok influencer filming a video', 'a "plantita" talking to her favorite plant', 'a "barker" at a jeepney terminal', 'a street food vendor selling isaw', 'a professional Mobile Legends player', 'Batman', 'a first-time tourist in Manila', 'a beauty pageant contestant', 'a pirate who just found treasure', 'a vampire who is afraid of blood', 'Santa Claus on his summer vacation', 'a PBA basketball player', 'a BPO employee on a night shift', 'a history professor', 'a student cramming for an exam', 'a fortune teller', 'a stand-up comedian', 'a famous vlogger doing a collab', 'Jessica Soho', 'Apo Whang-od', 'a food blogger reviewing crispy pata',
+            'a "Team Bahay" fan watching a concert on their phone', 'an expert on "budol finds"', 'your suki at the local palengke', 'someone lining up for the MRT during rush hour', 'a recent board exam passer', 'a Tito who only tells "Tito jokes"', 'Aling Nena from the sari-sari store', 'a proud parent on Facebook', 'someone who just won in a raffle', 'a "woke" Gen Z student'
         ];
 
         const personas_fil = [
@@ -769,14 +770,11 @@
             { text: 'Iron Man', marker: 'kay' },
             { text: 'Elsa ng Frozen', marker: 'kay' },
             { text: 'SpongeBob SquarePants', marker: 'kay' },
-            { text: 'Pikachu', marker: 'kay' },
             { text: 'Harry Potter', marker: 'kay' },
             { text: 'isang alien na kalalapag lang sa Quiapo', marker: 'sa' },
             { text: 'isang time traveler mula sa panahon ng Kastila', marker: 'sa' },
-            { text: 'isang nagsasalitang tarsier mula sa Bohol', marker: 'sa' },
             { text: 'isang multo sa Balete Drive', marker: 'sa' },
             { text: 'isang super-intelligent na AI', marker: 'sa' },
-            { text: 'isang pusa na nanghuhusga sa iyo', marker: 'sa' },
             { text: 'isang taong kagigising lang mula sa 20-taong coma', marker: 'sa' },
             { text: 'isang TikTok influencer', marker: 'sa' },
             { text: 'isang "plantita"', marker: 'sa' },
@@ -784,7 +782,6 @@
             { text: 'isang nagtitinda ng isaw', marker: 'sa' },
             { text: 'isang professional Mobile Legends player', marker: 'sa' },
             { text: 'Batman', marker: 'kay' },
-            { text: 'aso mo na biglang nakaintindi ng Tagalog', marker: 'sa' },
             { text: 'isang turista sa Maynila', marker: 'sa' },
             { text: 'isang beauty pageant contestant', marker: 'sa' },
             { text: 'isang pirata na nakahanap ng kayamanan', marker: 'sa' },
@@ -797,7 +794,17 @@
             { text: 'isang stand-up comedian', marker: 'sa' },
             { text: 'isang sikat na vlogger', marker: 'sa' },
             { text: 'Apo Whang-od', marker: 'kay' },
-            { text: 'Jessica Soho', marker: 'kay' }
+            { text: 'Jessica Soho', marker: 'kay' },
+            { text: 'isang "Team Bahay" fan na nanonood ng concert sa phone', marker: 'sa' },
+            { text: 'isang expert sa mga "budol finds"', marker: 'sa' },
+            { text: 'iyong suki sa palengke', marker: 'sa' },
+            { text: 'isang taong nakapila sa MRT tuwing rush hour', marker: 'sa' },
+            { text: 'isang bagong board exam passer', marker: 'sa' },
+            { text: 'isang Tito na mahilig mag-"Tito joke"', marker: 'sa' },
+            { text: 'Aling Nena sa sari-sari store', marker: 'kay' },
+            { text: 'isang proud parent sa Facebook', marker: 'sa' },
+            { text: 'isang nanalo sa raffle', marker: 'sa' },
+            { text: 'isang "woke" na Gen Z student', marker: 'sa' }
         ];
 
         function generateMadLib() {
