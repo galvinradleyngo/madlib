@@ -68,7 +68,7 @@
                  <button id="generateBtn" data-key="generate-btn" class="w-full bg-blue-600 text-white font-bold text-lg uppercase tracking-wider py-4 rounded-xl hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 transform hover:-translate-y-1 transition-all shadow-lg hover:shadow-xl">
                     Generate
                 </button>
-                 <button id="askAudienceBtn" data-key="ask-audience-btn" class="w-full bg-green-500 text-white font-bold text-lg uppercase tracking-wider py-4 rounded-xl hover:bg-green-600 active:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 transform hover:-translate-y-1 transition-all shadow-lg hover:shadow-xl">
+                 <button id="askAudienceBtn" data-key="ask-audience-btn" class="w-full bg-green-500 text-white font-bold text-lg uppercase tracking-wide py-4 rounded-xl hover:bg-green-600 active:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 transform hover:-translate-y-1 transition-all shadow-lg hover:shadow-xl">
                     Ask The Audience
                 </button>
                  <button id="customizeBtn" data-key="customize-btn" class="w-full bg-gray-500 text-white font-bold text-lg uppercase tracking-wider py-4 rounded-xl hover:bg-gray-600 active:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-300 transform hover:-translate-y-1 transition-all shadow-lg hover:shadow-xl">
@@ -310,7 +310,7 @@
             audience_view.classList.add('hidden');
             languageToggleBtn.addEventListener('click', toggleLanguage);
             updateLanguageToggleState();
-            persistentRefreshBtn.addEventListener('click', () => location.reload());
+            persistentRefreshBtn.addEventListener('click', fullReset);
             generateBtn.addEventListener('click', generateMadLib);
             topicInput.addEventListener('keyup', (event) => event.key === 'Enter' && generateMadLib());
             askAudienceBtn.addEventListener('click', handleAskAudience);
@@ -320,7 +320,7 @@
             closeModalBtn.addEventListener('click', () => qrModal.classList.add('hidden'));
             startVotingBtn.addEventListener('click', handleStartVoting);
             endVotingBtn.addEventListener('click', handleEndVoting);
-            newRoundBtn.addEventListener('click', resetForNewRound);
+            newRoundBtn.addEventListener('click', fullReset);
             closeWinnerModal.addEventListener('click', () => {
                 winnerModal.classList.add('hidden');
                 winnerModal.querySelector('div').classList.add('scale-95');
@@ -353,32 +353,38 @@
             }
         }
 
-
         async function handleAskAudience() {
-            if (!db) { return showNotification("Real-time features are disabled.", 'error');}
-            currentSessionId = generateSessionId();
-            const sessionRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions`, currentSessionId);
-            const currentPrompt = resultElement.innerHTML;
+            if (!db) { return showNotification("Real-time features are disabled.", 'error'); }
 
-            await setDoc(sessionRef, { 
-                votingOpen: false, 
-                winnerAnnounced: false, 
-                createdAt: new Date(),
-                prompt: currentPrompt 
-            });
+            // If a session does not exist, create one.
+            if (!currentSessionId) {
+                currentSessionId = generateSessionId();
+                const sessionRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions`, currentSessionId);
+                const currentPrompt = resultElement.innerHTML;
 
+                await setDoc(sessionRef, {
+                    votingOpen: false,
+                    winnerAnnounced: false,
+                    createdAt: new Date(),
+                    prompt: currentPrompt
+                });
+                
+                if (unsubscribeSubmissions) unsubscribeSubmissions();
+                submissionsGrid.innerHTML = '';
+                listenForSubmissions();
+            }
+
+            // Always show the QR code modal for the current session (new or existing)
             const url = `https://galvinradleyngo.github.io/madlib/?session=${currentSessionId}&lang=${currentLanguage}`;
             qrcodeContainer.innerHTML = '';
             new QRCode(qrcodeContainer, { text: url, width: 180, height: 180 });
             sessionLinkInput.value = url;
             sessionIdDisplay.textContent = `Session ID: ${currentSessionId}`;
             qrModal.classList.remove('hidden');
-            listenForSubmissions();
         }
 
         function listenForSubmissions() {
             submissionsContainer.classList.remove('hidden');
-            submissionsGrid.innerHTML = '';
             const submissionsRef = collection(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`);
             if(unsubscribeSubmissions) unsubscribeSubmissions();
             unsubscribeSubmissions = onSnapshot(submissionsRef, (snapshot) => {
@@ -427,7 +433,7 @@
             endVotingBtn.disabled = false;
         }
 
-        function resetForNewRound() {
+        function fullReset() {
             winnerModal.classList.add('hidden');
             submissionsContainer.classList.add('hidden');
             endVotingBtn.classList.add('hidden');
@@ -436,6 +442,12 @@
             submissionsGrid.innerHTML = '';
             resultElement.innerHTML = uiTranslations[currentLanguage]['prompt-placeholder'];
             topicInput.value = '';
+
+            customPersonas = [];
+            customListName = '';
+            updateCustomListIndicator();
+            customListNameInput.value = '';
+            customListTextarea.value = '';
             
             if (unsubscribeSubmissions) unsubscribeSubmissions();
             if (unsubscribeSession) unsubscribeSession();
