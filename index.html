@@ -102,6 +102,10 @@
              <button id="newRoundBtn" data-key="new-round-btn" class="hidden mt-6 w-full bg-gray-600 text-white font-bold text-lg uppercase tracking-wider py-3 rounded-xl hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-300 shadow-lg">
                 New Round
              </button>
+                 <div id="revealed-responses-presenter" class="hidden mt-6 text-left">
+                     <h3 class="text-lg font-bold text-gray-700 mb-3" data-key="revealed-responses-title">All Responses</h3>
+                     <div id="revealed-responses-list-presenter" class="space-y-2"></div>
+                 </div>
         </div>
 
 
@@ -266,6 +270,8 @@
         const endVotingBtn = document.getElementById('endVotingBtn');
         const revealResponsesBtn = document.getElementById('revealResponsesBtn');
         const newRoundBtn = document.getElementById('newRoundBtn');
+        const revealedResponsesPresenter = document.getElementById('revealed-responses-presenter');
+        const revealedResponsesListPresenter = document.getElementById('revealed-responses-list-presenter');
         const audienceInput = document.getElementById('audienceInput');
         const audienceNameInput = document.getElementById('audienceNameInput');
         const audiencePromptDisplay = document.getElementById('audience-prompt-display');
@@ -439,6 +445,8 @@
                 
                 if (unsubscribeSubmissions) unsubscribeSubmissions();
                 submissionsGrid.innerHTML = '';
+                revealedResponsesPresenter.classList.add('hidden');
+                revealedResponsesListPresenter.innerHTML = '';
                 listenForSubmissions();
             }
 
@@ -469,6 +477,7 @@
              await updateDoc(sessionRef, { votingOpen: true });
              startVotingBtn.classList.add('hidden');
              endVotingBtn.classList.remove('hidden');
+               revealedResponsesPresenter.classList.add('hidden');
         }
 
         async function handleEndVoting() {
@@ -507,8 +516,48 @@
             revealResponsesBtn.disabled = true;
             const sessionRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions`, currentSessionId);
             await updateDoc(sessionRef, { responsesRevealed: true });
+            await loadRevealedResponsesForPresenter();
+            revealedResponsesPresenter.classList.remove('hidden');
             revealResponsesBtn.classList.add('hidden');
             revealResponsesBtn.disabled = false;
+        }
+
+        async function loadRevealedResponsesForPresenter() {
+            if (!db || !currentSessionId) return;
+            const submissionsRef = collection(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`);
+            const snapshot = await getDocs(submissionsRef);
+
+            revealedResponsesListPresenter.innerHTML = '';
+
+            if (snapshot.empty) {
+                const emptyState = document.createElement('p');
+                emptyState.className = 'text-sm text-gray-500';
+                emptyState.textContent = uiTranslations[currentLanguage]['no-responses-yet'];
+                revealedResponsesListPresenter.appendChild(emptyState);
+                return;
+            }
+
+            const responses = snapshot.docs
+                .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+                .sort((a, b) => (b.votes || 0) - (a.votes || 0));
+
+            responses.forEach((response) => {
+                const item = document.createElement('div');
+                item.className = 'bg-gray-50 border border-gray-200 rounded-lg px-3 py-2';
+
+                const text = document.createElement('p');
+                text.className = 'text-gray-800 text-sm';
+                text.textContent = response.text || '';
+
+                const meta = document.createElement('p');
+                meta.className = 'text-xs text-gray-500 mt-1';
+                const author = response.authorName || 'Anonymous';
+                meta.textContent = `${author} • ${response.votes || 0} ${currentLanguage === 'en' ? 'votes' : 'boto'}`;
+
+                item.appendChild(text);
+                item.appendChild(meta);
+                revealedResponsesListPresenter.appendChild(item);
+            });
         }
 
         function fullReset() {
@@ -518,6 +567,8 @@
             revealResponsesBtn.classList.add('hidden');
             newRoundBtn.classList.add('hidden');
             startVotingBtn.classList.add('hidden');
+            revealedResponsesPresenter.classList.add('hidden');
+            revealedResponsesListPresenter.innerHTML = '';
             submissionsGrid.innerHTML = '';
             resultElement.innerHTML = uiTranslations[currentLanguage]['prompt-placeholder'];
             topicInput.value = '';
