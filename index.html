@@ -19,11 +19,48 @@
         }
         /* Simple animation for dialogue bubbles */
         @keyframes pop-in {
-            0% { transform: scale(0.5); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
+            0% { transform: translateY(10px) scale(0.98); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
         }
         .bubble {
-            animation: pop-in 0.3s ease-out forwards;
+            animation: pop-in 0.35s ease-out forwards;
+        }
+        @keyframes prompt-fade {
+            0% { opacity: 0; transform: translateY(8px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .prompt-animate {
+            animation: prompt-fade 0.35s ease-out;
+        }
+        .reveal-card {
+            perspective: 1200px;
+            min-height: 84px;
+        }
+        .reveal-card-inner {
+            position: relative;
+            width: 100%;
+            min-height: 84px;
+            transform-style: preserve-3d;
+            transition: transform 0.7s ease;
+        }
+        .reveal-card.is-flipped .reveal-card-inner {
+            transform: rotateY(180deg);
+        }
+        .reveal-face {
+            position: absolute;
+            inset: 0;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            background: #f9fafb;
+            padding: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            backface-visibility: hidden;
+        }
+        .reveal-face-back {
+            transform: rotateY(180deg);
         }
         /* Hide scrollbar but allow scrolling */
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -516,13 +553,56 @@
             revealResponsesBtn.disabled = true;
             const sessionRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions`, currentSessionId);
             await updateDoc(sessionRef, { responsesRevealed: true });
-            await loadRevealedResponsesForPresenter();
+            await loadRevealedResponsesForPresenter(true);
             revealedResponsesPresenter.classList.remove('hidden');
             revealResponsesBtn.classList.add('hidden');
             revealResponsesBtn.disabled = false;
         }
 
-        async function loadRevealedResponsesForPresenter() {
+        function animatePromptChange(element) {
+            element.classList.remove('prompt-animate');
+            void element.offsetWidth;
+            element.classList.add('prompt-animate');
+        }
+
+        function renderRevealCards(listContainer, responses, autoFlip = false) {
+            listContainer.innerHTML = '';
+
+            responses.forEach((response, index) => {
+                const card = document.createElement('div');
+                card.className = 'reveal-card';
+
+                const inner = document.createElement('div');
+                inner.className = 'reveal-card-inner';
+
+                const front = document.createElement('div');
+                front.className = 'reveal-face reveal-face-front';
+                const frontText = document.createElement('p');
+                frontText.className = 'font-semibold text-gray-700';
+                frontText.textContent = response.authorName || 'Anonymous';
+                front.appendChild(frontText);
+
+                const back = document.createElement('div');
+                back.className = 'reveal-face reveal-face-back';
+                const backText = document.createElement('p');
+                backText.className = 'text-gray-800 text-sm';
+                backText.textContent = response.text || '';
+                back.appendChild(backText);
+
+                inner.appendChild(front);
+                inner.appendChild(back);
+                card.appendChild(inner);
+                listContainer.appendChild(card);
+
+                if (autoFlip) {
+                    setTimeout(() => {
+                        card.classList.add('is-flipped');
+                    }, 180 + (index * 90));
+                }
+            });
+        }
+
+        async function loadRevealedResponsesForPresenter(autoFlip = false) {
             if (!db || !currentSessionId) return;
             const submissionsRef = collection(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`);
             const snapshot = await getDocs(submissionsRef);
@@ -537,27 +617,8 @@
                 return;
             }
 
-            const responses = snapshot.docs
-                .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
-                .sort((a, b) => (b.votes || 0) - (a.votes || 0));
-
-            responses.forEach((response) => {
-                const item = document.createElement('div');
-                item.className = 'bg-gray-50 border border-gray-200 rounded-lg px-3 py-2';
-
-                const text = document.createElement('p');
-                text.className = 'text-gray-800 text-sm';
-                text.textContent = response.text || '';
-
-                const meta = document.createElement('p');
-                meta.className = 'text-xs text-gray-500 mt-1';
-                const author = response.authorName || 'Anonymous';
-                meta.textContent = `${author} • ${response.votes || 0} ${currentLanguage === 'en' ? 'votes' : 'boto'}`;
-
-                item.appendChild(text);
-                item.appendChild(meta);
-                revealedResponsesListPresenter.appendChild(item);
-            });
+            const responses = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+            renderRevealCards(revealedResponsesListPresenter, responses, autoFlip);
         }
 
         function fullReset() {
@@ -650,7 +711,10 @@
                  const sessionData = docSnap.data();
 
                  if (sessionData.prompt && sessionData.prompt !== uiTranslations['en']['prompt-placeholder'] && sessionData.prompt !== uiTranslations['fil']['prompt-placeholder']) {
-                    audiencePromptDisplay.innerHTML = sessionData.prompt;
+                          if (audiencePromptDisplay.innerHTML !== sessionData.prompt) {
+                                audiencePromptDisplay.innerHTML = sessionData.prompt;
+                                animatePromptChange(audiencePromptDisplay);
+                          }
                     audiencePromptDisplay.classList.remove('hidden');
                  }
 
@@ -664,7 +728,7 @@
                     winningTextAudience.textContent = `"${sessionData.winner.text}"`;
                     if (sessionData.responsesRevealed) {
                         revealedResponsesAudience.classList.remove('hidden');
-                        loadRevealedResponsesForAudience();
+                        loadRevealedResponsesForAudience(true);
                     } else {
                         revealedResponsesAudience.classList.add('hidden');
                     }
@@ -697,7 +761,7 @@
              });
         }
 
-        async function loadRevealedResponsesForAudience() {
+        async function loadRevealedResponsesForAudience(autoFlip = false) {
             if (!db || !currentSessionId) return;
             const submissionsRef = collection(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`);
             const snapshot = await getDocs(submissionsRef);
@@ -712,27 +776,8 @@
                 return;
             }
 
-            const responses = snapshot.docs
-                .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
-                .sort((a, b) => (b.votes || 0) - (a.votes || 0));
-
-            responses.forEach((response) => {
-                const item = document.createElement('div');
-                item.className = 'bg-gray-50 border border-gray-200 rounded-lg px-3 py-2';
-
-                const text = document.createElement('p');
-                text.className = 'text-gray-800 text-sm';
-                text.textContent = response.text || '';
-
-                const meta = document.createElement('p');
-                meta.className = 'text-xs text-gray-500 mt-1';
-                const author = response.authorName || 'Anonymous';
-                meta.textContent = `${author} • ${response.votes || 0} ${currentLanguage === 'en' ? 'votes' : 'boto'}`;
-
-                item.appendChild(text);
-                item.appendChild(meta);
-                revealedResponsesListAudience.appendChild(item);
-            });
+            const responses = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+            renderRevealCards(revealedResponsesListAudience, responses, autoFlip);
         }
         
         function loadVotingOptions() {
@@ -782,7 +827,7 @@
                  bubble.className = "bubble bg-white p-4 rounded-lg shadow text-center break-words";
                  bubble.innerHTML = `<p class="text-gray-800 text-lg">${data.text}</p><span class="vote-count font-bold text-xl text-blue-600 mt-2 block">${data.votes || 0}</span>`;
              } else {
-                 bubble.className = "bubble-vote w-full bg-white p-4 my-2 rounded-lg shadow text-left break-words cursor-pointer transition-transform hover:scale-105";
+                 bubble.className = "bubble bubble-vote w-full bg-white p-4 my-2 rounded-lg shadow text-left break-words cursor-pointer transition-transform hover:scale-105";
                  bubble.innerHTML = `<span class="vote-count float-right font-bold text-blue-600 text-lg">${data.votes || 0}</span><p class="text-gray-800">${data.text}</p>`;
                  bubble.addEventListener('click', () => handleVote(id));
                  if (votedForIds.includes(id)) {
@@ -1111,6 +1156,7 @@
             }
             
             resultElement.innerHTML = newPromptHTML;
+            animatePromptChange(resultElement);
 
             if (currentSessionId && db) {
                 const sessionRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions`, currentSessionId);
