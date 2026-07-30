@@ -47,6 +47,9 @@
     <!-- Presenter View Container -->
     <div id="presenter-view" class="relative bg-white rounded-2xl shadow-xl p-8 sm:p-12 text-center w-full max-w-3xl transform transition-all">
         <div class="absolute top-5 right-5 flex items-center gap-4">
+            <button class="help-trigger text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 rounded-full p-2 transition-colors" data-key-title="help-button-title" title="How to use">
+                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full border-2 border-current font-bold text-sm">?</span>
+            </button>
             <!-- Language Toggle Switch -->
             <div id="language-toggle-btn" class="relative bg-gray-200 rounded-full p-1 flex items-center cursor-pointer w-24 h-10">
                 <div id="language-toggle-slider" class="absolute bg-blue-600 h-8 w-1/2 rounded-full transition-transform duration-300 ease-in-out transform"></div>
@@ -93,6 +96,9 @@
               <button id="endVotingBtn" data-key="show-winner-btn" class="hidden mt-6 w-full bg-red-500 text-white font-bold text-lg uppercase tracking-wider py-3 rounded-xl hover:bg-red-600 focus:outline-none focus:ring-4 focus:ring-red-300 shadow-lg">
                 Show Winner!
              </button>
+                 <button id="revealResponsesBtn" data-key="reveal-responses-btn" class="hidden mt-6 w-full bg-amber-500 text-white font-bold text-lg uppercase tracking-wider py-3 rounded-xl hover:bg-amber-600 focus:outline-none focus:ring-4 focus:ring-amber-300 shadow-lg">
+                     Reveal Responses
+                 </button>
              <button id="newRoundBtn" data-key="new-round-btn" class="hidden mt-6 w-full bg-gray-600 text-white font-bold text-lg uppercase tracking-wider py-3 rounded-xl hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-300 shadow-lg">
                 New Round
              </button>
@@ -110,7 +116,10 @@
     </div>
     
     <!-- Audience View Container -->
-    <div id="audience-view" class="hidden bg-white rounded-2xl shadow-xl p-8 sm:p-12 text-center w-full max-w-md">
+    <div id="audience-view" class="relative hidden bg-white rounded-2xl shadow-xl p-8 sm:p-12 text-center w-full max-w-md">
+        <button class="help-trigger absolute top-5 right-5 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 rounded-full p-2 transition-colors" data-key-title="help-button-title" title="How to use">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full border-2 border-current font-bold text-sm">?</span>
+        </button>
         <div id="audience-prompt-display" class="bg-gray-100 p-4 rounded-lg mb-6 border border-gray-200 hidden text-base leading-relaxed">
             <!-- Prompt will be injected here -->
         </div>
@@ -141,6 +150,10 @@
                 <p id="winning-text-audience" class="text-xl font-bold text-yellow-800"></p>
             </div>
          </div>
+            <div id="revealed-responses-audience" class="hidden mt-6 text-left">
+                <h3 class="text-lg font-bold text-gray-700 mb-3" data-key="revealed-responses-title">All Responses</h3>
+                <div id="revealed-responses-list-audience" class="space-y-2"></div>
+            </div>
          <footer class="mt-8 text-xs text-gray-500 text-center space-y-1">
             <p data-key="footer-privacy-short">Data is temporarily stored and not retained.</p>
             <p data-key="footer-license-short">Licensed under <a href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">CC BY-NC 4.0</a>.</p>
@@ -162,6 +175,21 @@
                 <button id="close-customize-modal" class="bg-gray-200 text-gray-800 font-bold py-2 px-5 rounded-lg" data-key="cancel-btn">Cancel</button>
                 <button id="save-custom-list" class="bg-blue-600 text-white font-bold py-2 px-5 rounded-lg" data-key="save-btn">Save List</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-8 text-left relative max-w-xl w-full max-h-[85vh] overflow-y-auto">
+            <button id="close-help-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl" aria-label="Close help">&times;</button>
+            <h2 class="text-2xl font-bold text-blue-600 mb-3" data-key="help-modal-title">How this platform works</h2>
+            <p class="text-gray-600 mb-4" data-key="help-modal-description">Use Mad Lib, Mad Live to collect audience ideas in real time, vote, and reveal results.</p>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                <li data-key="help-step-1">Presenter enters a topic and clicks Generate to create the prompt.</li>
+                <li data-key="help-step-2">Presenter clicks Ask The Audience and shares the QR/link.</li>
+                <li data-key="help-step-3">Participants enter their name, submit a response, then vote when voting opens.</li>
+                <li data-key="help-step-4">Presenter clicks Show Winner, then optionally Reveal Responses and start a New Round.</li>
+            </ol>
         </div>
     </div>
 
@@ -236,6 +264,7 @@
         const submissionsGrid = document.getElementById('submissions-grid');
         const startVotingBtn = document.getElementById('startVotingBtn');
         const endVotingBtn = document.getElementById('endVotingBtn');
+        const revealResponsesBtn = document.getElementById('revealResponsesBtn');
         const newRoundBtn = document.getElementById('newRoundBtn');
         const audienceInput = document.getElementById('audienceInput');
         const audienceNameInput = document.getElementById('audienceNameInput');
@@ -250,6 +279,8 @@
         const thanksMessage = document.getElementById('thanks-message');
         const winnerDisplayAudience = document.getElementById('winner-display-audience');
         const winningTextAudience = document.getElementById('winning-text-audience');
+        const revealedResponsesAudience = document.getElementById('revealed-responses-audience');
+        const revealedResponsesListAudience = document.getElementById('revealed-responses-list-audience');
         const qrModal = document.getElementById('qr-modal');
         const closeModalBtn = document.getElementById('close-modal');
         const qrcodeContainer = document.getElementById('qrcode');
@@ -269,6 +300,10 @@
         const customListNameInput = document.getElementById('custom-list-name');
         const customListIndicator = document.getElementById('custom-list-indicator');
         const saveCustomListBtn = document.getElementById('save-custom-list');
+        const helpModal = document.getElementById('help-modal');
+        const closeHelpModalBtn = document.getElementById('close-help-modal');
+        const helpTriggers = document.querySelectorAll('.help-trigger');
+        let helpModalInitialized = false;
        
         // --- FIREBASE SETUP ---
         async function setupFirebase() {
@@ -308,13 +343,31 @@
             currentSessionId = params.get('session');
             const lang = params.get('lang');
             if(lang) currentLanguage = lang;
-            
+
+            initializeHelpModal();
             updateUIText();
             if (currentSessionId) {
                 initializeAudienceView();
             } else {
                 initializePresenterView();
             }
+        }
+
+        function initializeHelpModal() {
+            if (helpModalInitialized) return;
+
+            helpTriggers.forEach((trigger) => {
+                trigger.addEventListener('click', () => helpModal.classList.remove('hidden'));
+            });
+
+            closeHelpModalBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
+            helpModal.addEventListener('click', (event) => {
+                if (event.target === helpModal) {
+                    helpModal.classList.add('hidden');
+                }
+            });
+
+            helpModalInitialized = true;
         }
         
         // --- PRESENTER LOGIC ---
@@ -333,6 +386,7 @@
             closeModalBtn.addEventListener('click', () => qrModal.classList.add('hidden'));
             startVotingBtn.addEventListener('click', handleStartVoting);
             endVotingBtn.addEventListener('click', handleEndVoting);
+            revealResponsesBtn.addEventListener('click', handleRevealResponses);
             newRoundBtn.addEventListener('click', fullReset);
             closeWinnerModal.addEventListener('click', () => {
                 winnerModal.classList.add('hidden');
@@ -378,6 +432,7 @@
                 await setDoc(sessionRef, {
                     votingOpen: false,
                     winnerAnnounced: false,
+                    responsesRevealed: false,
                     createdAt: new Date(),
                     prompt: currentPrompt
                 });
@@ -442,14 +497,25 @@
             
             triggerConfetti();
             endVotingBtn.classList.add('hidden');
+            revealResponsesBtn.classList.remove('hidden');
             newRoundBtn.classList.remove('hidden');
             endVotingBtn.disabled = false;
+        }
+
+        async function handleRevealResponses() {
+            if (!db || !currentSessionId) return;
+            revealResponsesBtn.disabled = true;
+            const sessionRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions`, currentSessionId);
+            await updateDoc(sessionRef, { responsesRevealed: true });
+            revealResponsesBtn.classList.add('hidden');
+            revealResponsesBtn.disabled = false;
         }
 
         function fullReset() {
             winnerModal.classList.add('hidden');
             submissionsContainer.classList.add('hidden');
             endVotingBtn.classList.add('hidden');
+            revealResponsesBtn.classList.add('hidden');
             newRoundBtn.classList.add('hidden');
             startVotingBtn.classList.add('hidden');
             submissionsGrid.innerHTML = '';
@@ -545,13 +611,19 @@
                     audienceVotingArea.classList.add('hidden');
                     winnerDisplayAudience.classList.remove('hidden');
                     winningTextAudience.textContent = `"${sessionData.winner.text}"`;
-                    if(unsubscribeSubmissions) unsubscribeSubmissions();
+                    if (sessionData.responsesRevealed) {
+                        revealedResponsesAudience.classList.remove('hidden');
+                        loadRevealedResponsesForAudience();
+                    } else {
+                        revealedResponsesAudience.classList.add('hidden');
+                    }
                  } else if (sessionData.votingOpen) {
                             audienceNameForm.classList.add('hidden');
                      thanksMessage.classList.add('hidden');
                      audienceSubmissionForm.classList.add('hidden');
                             audienceGreeting.classList.add('hidden');
                      audienceVotingArea.classList.remove('hidden');
+                     revealedResponsesAudience.classList.add('hidden');
                      document.getElementById('audience-title').textContent = uiTranslations[currentLanguage]['audience-title-vote'];
                      document.getElementById('audience-instruction').textContent = uiTranslations[currentLanguage]['audience-instruction-vote'];
                      updateVoteCounter();
@@ -559,6 +631,7 @@
                       } else {
                             audienceVotingArea.classList.add('hidden');
                             winnerDisplayAudience.classList.add('hidden');
+                            revealedResponsesAudience.classList.add('hidden');
                             if (hasSubmittedAudienceIdea) {
                                 audienceNameForm.classList.add('hidden');
                                 audienceSubmissionForm.classList.add('hidden');
@@ -571,6 +644,44 @@
                             }
                  }
              });
+        }
+
+        async function loadRevealedResponsesForAudience() {
+            if (!db || !currentSessionId) return;
+            const submissionsRef = collection(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`);
+            const snapshot = await getDocs(submissionsRef);
+
+            revealedResponsesListAudience.innerHTML = '';
+
+            if (snapshot.empty) {
+                const emptyState = document.createElement('p');
+                emptyState.className = 'text-sm text-gray-500';
+                emptyState.textContent = uiTranslations[currentLanguage]['no-responses-yet'];
+                revealedResponsesListAudience.appendChild(emptyState);
+                return;
+            }
+
+            const responses = snapshot.docs
+                .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+                .sort((a, b) => (b.votes || 0) - (a.votes || 0));
+
+            responses.forEach((response) => {
+                const item = document.createElement('div');
+                item.className = 'bg-gray-50 border border-gray-200 rounded-lg px-3 py-2';
+
+                const text = document.createElement('p');
+                text.className = 'text-gray-800 text-sm';
+                text.textContent = response.text || '';
+
+                const meta = document.createElement('p');
+                meta.className = 'text-xs text-gray-500 mt-1';
+                const author = response.authorName || 'Anonymous';
+                meta.textContent = `${author} • ${response.votes || 0} ${currentLanguage === 'en' ? 'votes' : 'boto'}`;
+
+                item.appendChild(text);
+                item.appendChild(meta);
+                revealedResponsesListAudience.appendChild(item);
+            });
         }
         
         function loadVotingOptions() {
@@ -670,10 +781,11 @@
                 'audience-ideas-title': 'Audience Ideas',
                 'start-voting-btn': 'Start Voting!',
                 'show-winner-btn': 'Show Winner!',
+                'reveal-responses-btn': 'Reveal Responses',
                 'new-round-btn': 'New Round',
                 'audience-title': 'Join the Fun!',
                 'audience-instruction-name': 'Enter your name to join first.',
-                'audience-instruction-submit': 'Submit your fun persona idea below.',
+                'audience-instruction-submit': 'Submit your response below.',
                 'audience-name-placeholder': "e.g., Alex",
                 'audience-name-btn': 'Continue',
                 'audience-placeholder': "e.g., 'a talking tarsier'",
@@ -682,6 +794,8 @@
                 'audience-name-required': 'Please enter your name first.',
                 'thanks-message': 'Thanks for your submission! Waiting for others...',
                 'winner-audience-info': 'Voting has ended! The winner is:',
+                'revealed-responses-title': 'All Responses',
+                'no-responses-yet': 'No responses yet.',
                 'qr-title': 'Scan to Join!',
                 'qr-instruction': 'Ask your audience to scan this QR code or use the link below.',
                 'copy-btn': 'COPY',
@@ -696,6 +810,13 @@
                 'audience-instruction-vote': 'You have 3 votes. Tap to vote or un-vote.',
                 'max-votes-notification': 'You have used all 3 votes!',
                 'new-round-notification': 'Ready for a new round!',
+                'help-button-title': 'How to use',
+                'help-modal-title': 'How this platform works',
+                'help-modal-description': 'Use Mad Lib, Mad Live to collect audience ideas in real time, vote, and reveal results.',
+                'help-step-1': 'Presenter enters a topic and clicks Generate to create the prompt.',
+                'help-step-2': 'Presenter clicks Ask The Audience and shares the QR/link.',
+                'help-step-3': 'Participants enter their name, submit a response, then vote when voting opens.',
+                'help-step-4': 'Presenter clicks Show Winner, then optionally Reveal Responses and start a New Round.',
                 'customize-modal-title': 'Customize Your Persona List',
                 'customize-modal-instruction': 'Enter one person, character, or phrase per line. This will replace the default list. <br><strong>Tip:</strong> For names, please use capital letters (e.g., Jose Rizal) so the correct grammar is used.',
                 'cancel-btn': 'Cancel',
@@ -718,10 +839,11 @@
                 'audience-ideas-title': 'Mga Ideya ng Audience',
                 'start-voting-btn': 'Simulan ang Pagboto!',
                 'show-winner-btn': 'Ipakita ang Nanalo!',
+                'reveal-responses-btn': 'Ipakita ang Lahat ng Tugon',
                 'new-round-btn': 'Bagong Round',
                 'audience-title': 'Sali na sa Kasiyahan!',
                 'audience-instruction-name': 'Ilagay muna ang iyong pangalan para makasali.',
-                'audience-instruction-submit': 'Isumite ang iyong ideya sa ibaba.',
+                'audience-instruction-submit': 'Isumite ang iyong tugon sa ibaba.',
                 'audience-name-placeholder': "hal., Alex",
                 'audience-name-btn': 'Magpatuloy',
                 'audience-placeholder': "e.g., 'isang nagsasalitang tarsier'",
@@ -730,6 +852,8 @@
                 'audience-name-required': 'Pakilagay muna ang iyong pangalan.',
                 'thanks-message': 'Salamat sa iyong sinumite! Antayin lang natin ang iba...',
                 'winner-audience-info': 'Tapos na ang botohan! Ang nanalo ay:',
+                'revealed-responses-title': 'Lahat ng Tugon',
+                'no-responses-yet': 'Wala pang mga tugon.',
                 'qr-title': 'I-scan para Sumali!',
                 'qr-instruction': 'I-scan ang QR code na ito o gamitin ang link sa ibaba.',
                 'copy-btn': 'COPY',
@@ -744,6 +868,13 @@
                 'audience-instruction-vote': 'Mayroon kang 3 boto. Pindutin para bumoto o alisin ang boto.',
                 'max-votes-notification': 'Nagamit mo na ang iyong 3 boto!',
                 'new-round-notification': 'Handa na para sa bagong round!',
+                'help-button-title': 'Paano gamitin',
+                'help-modal-title': 'Paano gumagana ang platform na ito',
+                'help-modal-description': 'Gamitin ang Mad Lib, Mad Live para mangalap ng mga tugon nang real time, bumoto, at ipakita ang mga resulta.',
+                'help-step-1': 'Maglagay ang presenter ng paksa at i-click ang Bumuo para gumawa ng prompt.',
+                'help-step-2': 'I-click ng presenter ang Tanungin ang Audience at ibahagi ang QR/link.',
+                'help-step-3': 'Maglagay ang participants ng pangalan, magsumite ng tugon, at bumoto kapag bukas na ang botohan.',
+                'help-step-4': 'I-click ng presenter ang Ipakita ang Nanalo, saka puwedeng Ipakita ang Lahat ng Tugon at magsimula ng Bagong Round.',
                 'customize-modal-title': 'Magbigay ng Sariling Listahan',
                 'customize-modal-instruction': 'Maglagay ng isang tao, karakter, o parirala bawat linya. Ito ang papalit sa dating listahan. <br><strong>Tip:</strong> Para sa mga pangalan, pakigamit ng malaking titik (e.g., Jose Rizal) para magamit ang tamang balarila.',
                 'cancel-btn': 'Cancel',
@@ -795,6 +926,10 @@
              document.querySelectorAll('[data-key-placeholder]').forEach(el => {
                 const key = el.dataset.keyPlaceholder;
                 if(translations[key]) el.placeholder = translations[key];
+            });
+            document.querySelectorAll('[data-key-title]').forEach(el => {
+                const key = el.dataset.keyTitle;
+                if(translations[key]) el.title = translations[key];
             });
             updateCustomListIndicator();
         }
