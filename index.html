@@ -288,6 +288,7 @@
         let votedForIds = [];
         let audienceDisplayName = '';
         let hasSubmittedAudienceIdea = false;
+        let isVotingActive = false;
 
         const appId = 'madlibs-app';
         
@@ -501,7 +502,7 @@
             const submissionsRef = collection(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`);
             if(unsubscribeSubmissions) unsubscribeSubmissions();
             unsubscribeSubmissions = onSnapshot(submissionsRef, (snapshot) => {
-                startVotingBtn.classList.toggle('hidden', snapshot.empty);
+                startVotingBtn.classList.toggle('hidden', snapshot.empty || isVotingActive);
                 snapshot.docChanges().forEach((change) => {
                     if (change.type === "added")   renderBubble(change.doc.id, change.doc.data(), 'presenter');
                     if (change.type === "modified") updateBubbleVotes(change.doc.id, change.doc.data());
@@ -512,6 +513,7 @@
         async function handleStartVoting() {
              const sessionRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions`, currentSessionId);
              await updateDoc(sessionRef, { votingOpen: true });
+             isVotingActive = true;
              startVotingBtn.classList.add('hidden');
              endVotingBtn.classList.remove('hidden');
                revealedResponsesPresenter.classList.add('hidden');
@@ -542,6 +544,7 @@
             setTimeout(() => winnerModal.querySelector('div').classList.remove('scale-95'), 10);
             
             triggerConfetti();
+            isVotingActive = false;
             endVotingBtn.classList.add('hidden');
             revealResponsesBtn.classList.remove('hidden');
             newRoundBtn.classList.remove('hidden');
@@ -631,6 +634,7 @@
             revealedResponsesPresenter.classList.add('hidden');
             revealedResponsesListPresenter.innerHTML = '';
             submissionsGrid.innerHTML = '';
+            isVotingActive = false;
             resultElement.innerHTML = uiTranslations[currentLanguage]['prompt-placeholder'];
             topicInput.value = '';
 
@@ -876,7 +880,7 @@
                 'prompt-placeholder': 'Your prompt will appear here...',
                 'audience-ideas-title': 'Audience Ideas',
                 'start-voting-btn': 'Start Voting!',
-                'show-winner-btn': 'Show Winner!',
+                'show-winner-btn': 'Stop Voting',
                 'reveal-responses-btn': 'Reveal Responses',
                 'new-round-btn': 'New Round',
                 'audience-title': 'Join the Fun!',
@@ -934,7 +938,7 @@
                 'prompt-placeholder': 'Lalabas dito ang iyong prompt...',
                 'audience-ideas-title': 'Mga Ideya ng Audience',
                 'start-voting-btn': 'Simulan ang Pagboto!',
-                'show-winner-btn': 'Ipakita ang Nanalo!',
+                'show-winner-btn': 'Itigil ang Pagboto',
                 'reveal-responses-btn': 'Ipakita ang Lahat ng Tugon',
                 'new-round-btn': 'Bagong Round',
                 'audience-title': 'Sali na sa Kasiyahan!',
