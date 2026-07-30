@@ -116,11 +116,18 @@
         </div>
 
         <h1 id="audience-title" class="text-3xl font-bold text-blue-600 mb-2" data-key="audience-title">Join the Fun!</h1>
-        <p id="audience-instruction" class="text-gray-500 mb-6" data-key="audience-instruction-submit">Submit your fun persona idea below.</p>
+        <p id="audience-instruction" class="text-gray-500 mb-6" data-key="audience-instruction-name">Enter your name to join first.</p>
         
-        <div id="audience-submission-form">
+        <div id="audience-name-form">
+            <input type="text" id="audienceNameInput" data-key-placeholder="audience-name-placeholder" placeholder="e.g., Alex" class="w-full px-5 py-4 text-lg border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-shadow mb-4">
+            <button id="submitNameBtn" data-key="audience-name-btn" class="w-full bg-blue-600 text-white font-bold text-lg uppercase tracking-wider py-4 rounded-xl hover:bg-blue-700 shadow-lg">Continue</button>
+        </div>
+
+        <p id="audience-greeting" class="hidden text-base text-gray-600 mb-4"></p>
+
+        <div id="audience-submission-form" class="hidden">
             <input type="text" id="audienceInput" data-key-placeholder="audience-placeholder" placeholder="e.g., 'a talking tarsier'" class="w-full px-5 py-4 text-lg border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-shadow mb-4">
-            <button id="submitAudienceBtn" data-key="audience-submit-btn" class="w-full bg-blue-600 text-white font-bold text-lg uppercase tracking-wider py-4 rounded-xl hover:bg-blue-700 shadow-lg">Submit</button>
+            <button id="submitAudienceBtn" data-key="audience-submit-btn" class="w-full bg-blue-600 text-white font-bold text-lg uppercase tracking-wider py-4 rounded-xl hover:bg-blue-700 shadow-lg">Submit Idea</button>
         </div>
 
         <div id="audience-voting-area" class="hidden w-full text-left">
@@ -210,6 +217,8 @@
         const MAX_VOTES = 3;
         let votesUsed = 0;
         let votedForIds = [];
+        let audienceDisplayName = '';
+        let hasSubmittedAudienceIdea = false;
 
         const appId = 'madlibs-app';
         
@@ -229,8 +238,12 @@
         const endVotingBtn = document.getElementById('endVotingBtn');
         const newRoundBtn = document.getElementById('newRoundBtn');
         const audienceInput = document.getElementById('audienceInput');
+        const audienceNameInput = document.getElementById('audienceNameInput');
         const audiencePromptDisplay = document.getElementById('audience-prompt-display');
+        const submitNameBtn = document.getElementById('submitNameBtn');
         const submitAudienceBtn = document.getElementById('submitAudienceBtn');
+        const audienceNameForm = document.getElementById('audience-name-form');
+        const audienceGreeting = document.getElementById('audience-greeting');
         const audienceSubmissionForm = document.getElementById('audience-submission-form');
         const audienceVotingArea = document.getElementById('audience-voting-area');
         const voteCounter = document.getElementById('vote-counter');
@@ -463,17 +476,50 @@
         function initializeAudienceView() {
             presenter_view.classList.add('hidden');
             audience_view.classList.remove('hidden');
+            submitNameBtn.addEventListener('click', handleAudienceNameSubmit);
+            audienceNameInput.addEventListener('keyup', (event) => event.key === 'Enter' && handleAudienceNameSubmit());
             submitAudienceBtn.addEventListener('click', handleAudienceSubmit);
             audienceInput.addEventListener('keyup', (event) => event.key === 'Enter' && handleAudienceSubmit());
+            showAudienceNameStep();
             listenForSessionState();
+        }
+
+        function handleAudienceNameSubmit() {
+            const enteredName = audienceNameInput.value.trim();
+            if (!enteredName) {
+                showNotification(uiTranslations[currentLanguage]['audience-name-required'], 'error');
+                return;
+            }
+
+            audienceDisplayName = enteredName;
+            showAudienceIdeaStep();
+        }
+
+        function showAudienceNameStep() {
+            document.getElementById('audience-instruction').textContent = uiTranslations[currentLanguage]['audience-instruction-name'];
+            audienceNameForm.classList.remove('hidden');
+            audienceSubmissionForm.classList.add('hidden');
+            audienceGreeting.classList.add('hidden');
+            thanksMessage.classList.add('hidden');
+        }
+
+        function showAudienceIdeaStep() {
+            document.getElementById('audience-instruction').textContent = uiTranslations[currentLanguage]['audience-instruction-submit'];
+            audienceNameForm.classList.add('hidden');
+            audienceSubmissionForm.classList.remove('hidden');
+            audienceGreeting.textContent = `${uiTranslations[currentLanguage]['audience-greeting-prefix']} ${audienceDisplayName}!`;
+            audienceGreeting.classList.remove('hidden');
+            audienceInput.focus();
         }
 
         async function handleAudienceSubmit() {
             const text = audienceInput.value.trim();
             if (text && db) {
                 const submissionsRef = collection(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`);
-                await addDoc(submissionsRef, { text, votes: 0, author: userId });
+                await addDoc(submissionsRef, { text, votes: 0, author: userId, authorName: audienceDisplayName || 'Anonymous' });
+                hasSubmittedAudienceIdea = true;
                 audienceSubmissionForm.classList.add('hidden');
+                audienceGreeting.classList.add('hidden');
                 thanksMessage.classList.remove('hidden');
             }
         }
@@ -492,20 +538,37 @@
                  }
 
                  if (sessionData.winnerAnnounced) {
+                          audienceNameForm.classList.add('hidden');
                     audienceSubmissionForm.classList.add('hidden');
+                          audienceGreeting.classList.add('hidden');
                     thanksMessage.classList.add('hidden');
                     audienceVotingArea.classList.add('hidden');
                     winnerDisplayAudience.classList.remove('hidden');
                     winningTextAudience.textContent = `"${sessionData.winner.text}"`;
                     if(unsubscribeSubmissions) unsubscribeSubmissions();
                  } else if (sessionData.votingOpen) {
+                            audienceNameForm.classList.add('hidden');
                      thanksMessage.classList.add('hidden');
                      audienceSubmissionForm.classList.add('hidden');
+                            audienceGreeting.classList.add('hidden');
                      audienceVotingArea.classList.remove('hidden');
                      document.getElementById('audience-title').textContent = uiTranslations[currentLanguage]['audience-title-vote'];
                      document.getElementById('audience-instruction').textContent = uiTranslations[currentLanguage]['audience-instruction-vote'];
                      updateVoteCounter();
                      loadVotingOptions();
+                      } else {
+                            audienceVotingArea.classList.add('hidden');
+                            winnerDisplayAudience.classList.add('hidden');
+                            if (hasSubmittedAudienceIdea) {
+                                audienceNameForm.classList.add('hidden');
+                                audienceSubmissionForm.classList.add('hidden');
+                                audienceGreeting.classList.add('hidden');
+                                thanksMessage.classList.remove('hidden');
+                            } else if (audienceDisplayName) {
+                                showAudienceIdeaStep();
+                            } else {
+                                showAudienceNameStep();
+                            }
                  }
              });
         }
@@ -609,9 +672,14 @@
                 'show-winner-btn': 'Show Winner!',
                 'new-round-btn': 'New Round',
                 'audience-title': 'Join the Fun!',
+                'audience-instruction-name': 'Enter your name to join first.',
                 'audience-instruction-submit': 'Submit your fun persona idea below.',
+                'audience-name-placeholder': "e.g., Alex",
+                'audience-name-btn': 'Continue',
                 'audience-placeholder': "e.g., 'a talking tarsier'",
-                'audience-submit-btn': 'Submit',
+                'audience-submit-btn': 'Submit Idea',
+                'audience-greeting-prefix': 'Hi',
+                'audience-name-required': 'Please enter your name first.',
                 'thanks-message': 'Thanks for your submission! Waiting for others...',
                 'winner-audience-info': 'Voting has ended! The winner is:',
                 'qr-title': 'Scan to Join!',
@@ -652,9 +720,14 @@
                 'show-winner-btn': 'Ipakita ang Nanalo!',
                 'new-round-btn': 'Bagong Round',
                 'audience-title': 'Sali na sa Kasiyahan!',
+                'audience-instruction-name': 'Ilagay muna ang iyong pangalan para makasali.',
                 'audience-instruction-submit': 'Isumite ang iyong ideya sa ibaba.',
+                'audience-name-placeholder': "hal., Alex",
+                'audience-name-btn': 'Magpatuloy',
                 'audience-placeholder': "e.g., 'isang nagsasalitang tarsier'",
-                'audience-submit-btn': 'Ipasa',
+                'audience-submit-btn': 'Ipasa ang Ideya',
+                'audience-greeting-prefix': 'Kumusta',
+                'audience-name-required': 'Pakilagay muna ang iyong pangalan.',
                 'thanks-message': 'Salamat sa iyong sinumite! Antayin lang natin ang iba...',
                 'winner-audience-info': 'Tapos na ang botohan! Ang nanalo ay:',
                 'qr-title': 'I-scan para Sumali!',
