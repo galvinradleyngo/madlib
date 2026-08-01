@@ -316,6 +316,13 @@
             });
         }
 
+        function withTimeout(promise, timeoutMs, fallbackValue = null) {
+            return Promise.race([
+                promise,
+                new Promise((resolve) => setTimeout(() => resolve(fallbackValue), timeoutMs))
+            ]);
+        }
+
         async function signInAnonymouslyWithTimeout(timeoutMs = 3500) {
             if (!auth) return false;
 
@@ -772,6 +779,9 @@
             audienceInput.addEventListener('keyup', (event) => event.key === 'Enter' && handleAudienceSubmit());
             showAudienceNameStep();
             listenForSessionState();
+
+            // Pre-warm auth to reduce first-submit latency on iOS cold loads.
+            ensureAuthenticatedUser(1200).catch(() => {});
         }
 
         function handleAudienceNameSubmit() {
@@ -811,6 +821,12 @@
                 return true;
             }
 
+            const authReady = await withTimeout(authReadyPromise, timeoutMs, false);
+            if (authReady && auth.currentUser?.uid) {
+                userId = auth.currentUser.uid;
+                return true;
+            }
+
             const signedIn = await signInAnonymouslyWithTimeout(timeoutMs);
             if (!signedIn && resolveAuthReady) {
                 resolveAuthReady(false);
@@ -822,55 +838,7 @@
                 return true;
             }
 
-            const authResolved = await Promise.race([
-                authReadyPromise,
-                new Promise((resolve) => setTimeout(() => resolve(false), timeoutMs))
-            ]);
-
-            if (authResolved && auth.currentUser?.uid) {
-                userId = auth.currentUser.uid;
-                return true;
-            }
-
             return false;
-        }
-
-        function delay(ms) {
-            return new Promise((resolve) => setTimeout(resolve, ms));
-        }
-
-        async function submitAudienceIdeaWithRetry(text, maxAttempts = 6, retryDelayMs = 700) {
-            const submissionsRef = collection(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`);
-            let lastError = new Error('AUTH_NOT_READY');
-
-            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-                const authReady = await ensureAuthenticatedUser(1500);
-                if (!authReady) {
-                    lastError = new Error('AUTH_NOT_READY');
-                    if (attempt < maxAttempts) {
-                        await delay(retryDelayMs);
-                        continue;
-                    }
-                    break;
-                }
-
-                try {
-                    await addDoc(submissionsRef, { text, votes: 0, author: userId, authorName: audienceDisplayName || 'Anonymous' });
-                    return;
-                } catch (error) {
-                    lastError = error;
-                    const permissionIssue = String(error?.code || '').includes('permission-denied') || String(error?.message || '').toLowerCase().includes('insufficient permissions');
-
-                    if (permissionIssue && attempt < maxAttempts) {
-                        await delay(retryDelayMs);
-                        continue;
-                    }
-
-                    throw error;
-                }
-            }
-
-            throw lastError;
         }
 
         async function handleAudienceSubmit() {
@@ -889,7 +857,16 @@
             audienceInput.value = '';
 
             try {
-                await submitAudienceIdeaWithRetry(text);
+                const authReady = await ensureAuthenticatedUser(1200);
+                if (!authReady) throw new Error('AUTH_NOT_READY');
+
+                const submissionsRef = collection(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`);
+                const submitted = await withTimeout(
+                    addDoc(submissionsRef, { text, votes: 0, author: userId, authorName: audienceDisplayName || 'Anonymous' }).then(() => true),
+                    4000,
+                    false
+                );
+                if (!submitted) throw new Error('SUBMIT_TIMEOUT');
             } catch (error) {
                 console.error('Failed to submit audience idea:', error);
                 hasSubmittedAudienceIdea = false;
@@ -897,7 +874,7 @@
                 audienceSubmissionForm.classList.remove('hidden');
                 audienceGreeting.classList.remove('hidden');
                 audienceInput.value = text;
-                if (error && error.message === 'AUTH_NOT_READY') {
+                if (error && (error.message === 'AUTH_NOT_READY' || error.message === 'SUBMIT_TIMEOUT')) {
                     showNotification(uiTranslations[currentLanguage]['submit-auth-not-ready'], 'error');
                 } else {
                     showNotification(uiTranslations[currentLanguage]['submit-failed-notification'], 'error');
