@@ -9,10 +9,26 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+        (function () {
+            try {
+                var params = new URLSearchParams(window.location.search);
+                var hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+                var session = params.get('session') || hashParams.get('session');
+                if (session) {
+                    document.documentElement.classList.add('audience-route');
+                }
+            } catch (e) {
+                // Ignore route hint errors; main app logic will still run.
+            }
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- QR Code Generation Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
+        html.audience-route #presenter-view { display: none !important; }
+        html.audience-route #audience-view { display: block !important; }
         /* Custom font for the body */
         body {
             font-family: 'Poppins', sans-serif;
@@ -367,10 +383,7 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
                 updateConnectionStatus(true);
-
-                // Some Safari/iOS environments may delay or fail auth callbacks.
-                // Ensure the UI still initializes in offline/non-realtime mode.
-                setTimeout(() => runMainOnce(), 2500);
+                runMainOnce();
 
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
@@ -398,11 +411,19 @@
             main();
         }
 
+        function getRouteParams() {
+            const queryParams = new URLSearchParams(window.location.search);
+            const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+            const session = queryParams.get('session') || hashParams.get('session');
+            const lang = queryParams.get('lang') || hashParams.get('lang');
+            return { session, lang };
+        }
+
         // --- APP INITIALIZATION ---
         function main() {
-            const params = new URLSearchParams(window.location.search);
-            currentSessionId = params.get('session');
-            const lang = params.get('lang');
+            const route = getRouteParams();
+            currentSessionId = route.session;
+            const lang = route.lang;
             if(lang) currentLanguage = lang;
 
             initializeHelpModal();
@@ -506,9 +527,17 @@
             }
 
             // Always show the QR code modal for the current session (new or existing)
-            const url = `https://galvinradleyngo.github.io/madlib/?session=${currentSessionId}&lang=${currentLanguage}`;
+            const joinUrl = new URL(window.location.origin + window.location.pathname);
+            joinUrl.searchParams.set('session', currentSessionId);
+            joinUrl.searchParams.set('lang', currentLanguage);
+            joinUrl.hash = `session=${encodeURIComponent(currentSessionId)}&lang=${encodeURIComponent(currentLanguage)}`;
+            const url = joinUrl.toString();
             qrcodeContainer.innerHTML = '';
-            new QRCode(qrcodeContainer, { text: url, width: 180, height: 180 });
+            if (typeof QRCode !== 'undefined') {
+                new QRCode(qrcodeContainer, { text: url, width: 180, height: 180 });
+            } else {
+                qrcodeContainer.innerHTML = '<p class="text-sm text-gray-500">QR unavailable. Use link below.</p>';
+            }
             sessionLinkInput.value = url;
             sessionIdDisplay.textContent = `Session ID: ${currentSessionId}`;
             qrModal.classList.remove('hidden');
