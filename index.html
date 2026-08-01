@@ -307,6 +307,16 @@
         let isSubmittingAudienceIdea = false;
         let hasInitializedMain = false;
         let qrCodeLibraryPromise = null;
+        let authReadyPromise = Promise.resolve(false);
+        let resolveAuthReady = null;
+
+        function resetAuthReadyPromise() {
+            authReadyPromise = new Promise((resolve) => {
+                resolveAuthReady = resolve;
+            });
+        }
+
+        resetAuthReadyPromise();
 
         const appId = 'madlibs-app';
         
@@ -389,12 +399,21 @@
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         userId = user.uid;
+                        if (resolveAuthReady) {
+                            resolveAuthReady(true);
+                            resolveAuthReady = null;
+                        }
                     } else {
+                        resetAuthReadyPromise();
                         try {
                             await signInAnonymously(auth);
                         } catch (authError) {
                             console.error("Anonymous auth failed:", authError);
                             updateConnectionStatus(false);
+                            if (resolveAuthReady) {
+                                resolveAuthReady(false);
+                                resolveAuthReady = null;
+                            }
                         }
                     }
                     runMainOnce();
@@ -771,7 +790,7 @@
             audienceInput.focus();
         }
 
-        async function ensureAuthenticatedUser() {
+        async function ensureAuthenticatedUser(timeoutMs = 4500) {
             if (userId) return true;
             if (!auth) return false;
 
@@ -784,10 +803,23 @@
                 await signInAnonymously(auth);
             } catch (error) {
                 console.error('Anonymous auth unavailable for submission:', error);
-                return false;
+                if (resolveAuthReady) {
+                    resolveAuthReady(false);
+                    resolveAuthReady = null;
+                }
             }
 
             if (auth.currentUser?.uid) {
+                userId = auth.currentUser.uid;
+                return true;
+            }
+
+            const authResolved = await Promise.race([
+                authReadyPromise,
+                new Promise((resolve) => setTimeout(() => resolve(false), timeoutMs))
+            ]);
+
+            if (authResolved && auth.currentUser?.uid) {
                 userId = auth.currentUser.uid;
                 return true;
             }
