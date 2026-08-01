@@ -771,6 +771,30 @@
             audienceInput.focus();
         }
 
+        async function ensureAuthenticatedUser() {
+            if (userId) return true;
+            if (!auth) return false;
+
+            if (auth.currentUser?.uid) {
+                userId = auth.currentUser.uid;
+                return true;
+            }
+
+            try {
+                await signInAnonymously(auth);
+            } catch (error) {
+                console.error('Anonymous auth unavailable for submission:', error);
+                return false;
+            }
+
+            if (auth.currentUser?.uid) {
+                userId = auth.currentUser.uid;
+                return true;
+            }
+
+            return false;
+        }
+
         async function handleAudienceSubmit() {
             const text = audienceInput.value.trim();
             if (!text || !db || isSubmittingAudienceIdea) return;
@@ -778,6 +802,17 @@
             isSubmittingAudienceIdea = true;
             submitAudienceBtn.disabled = true;
             const originalBtnText = submitAudienceBtn.textContent;
+            submitAudienceBtn.textContent = currentLanguage === 'en' ? 'Connecting...' : 'Kumokonekta...';
+
+            const authReady = await ensureAuthenticatedUser();
+            if (!authReady) {
+                isSubmittingAudienceIdea = false;
+                submitAudienceBtn.disabled = false;
+                submitAudienceBtn.textContent = originalBtnText;
+                showNotification(uiTranslations[currentLanguage]['submit-auth-not-ready'], 'error');
+                return;
+            }
+
             submitAudienceBtn.textContent = currentLanguage === 'en' ? 'Submitting...' : 'Ipinapasa...';
 
             // Optimistic UI: immediately transition to waiting state for faster perceived response.
@@ -1011,6 +1046,7 @@
                 'audience-title-vote': 'Vote for your Favorite!',
                 'audience-instruction-vote': 'You have 3 votes. Tap to vote or un-vote.',
                 'response-hidden-label': 'Response hidden until reveal',
+                'submit-auth-not-ready': 'Still connecting. Please try again in a moment.',
                 'submit-failed-notification': 'Submission failed. Please try again.',
                 'max-votes-notification': 'You have used all 3 votes!',
                 'new-round-notification': 'Ready for a new round!',
@@ -1071,6 +1107,7 @@
                 'audience-title-vote': 'Bumoto para sa iyong Paborito!',
                 'audience-instruction-vote': 'Mayroon kang 3 boto. Pindutin para bumoto o alisin ang boto.',
                 'response-hidden-label': 'Nakatago ang tugon hanggang reveal',
+                'submit-auth-not-ready': 'Kumokonekta pa. Pakisubukang muli maya-maya.',
                 'submit-failed-notification': 'Hindi naisumite ang tugon. Pakisubukang muli.',
                 'max-votes-notification': 'Nagamit mo na ang iyong 3 boto!',
                 'new-round-notification': 'Handa na para sa bagong round!',
