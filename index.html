@@ -829,7 +829,7 @@
 
              if (isPresenter) {
                  bubble.className = "bubble bg-white p-4 rounded-lg shadow text-center break-words";
-                 bubble.innerHTML = `<p class="text-gray-800 text-lg">${data.text}</p><span class="vote-count font-bold text-xl text-blue-600 mt-2 block">${data.votes || 0}</span>`;
+                 bubble.innerHTML = `<p class="text-gray-500 text-sm uppercase tracking-wide">${uiTranslations[currentLanguage]['response-hidden-label']}</p><span class="vote-count font-bold text-xl text-blue-600 mt-2 block">${data.votes || 0}</span>`;
              } else {
                  bubble.className = "bubble bubble-vote w-full bg-white p-4 my-2 rounded-lg shadow text-left break-words cursor-pointer transition-transform hover:scale-105";
                  bubble.innerHTML = `<span class="vote-count float-right font-bold text-blue-600 text-lg">${data.votes || 0}</span><p class="text-gray-800">${data.text}</p>`;
@@ -908,6 +908,7 @@
                 'footer-license-short': 'Licensed under <a href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">CC BY-NC 4.0</a>.',
                 'audience-title-vote': 'Vote for your Favorite!',
                 'audience-instruction-vote': 'You have 3 votes. Tap to vote or un-vote.',
+                'response-hidden-label': 'Response hidden until reveal',
                 'max-votes-notification': 'You have used all 3 votes!',
                 'new-round-notification': 'Ready for a new round!',
                 'help-button-title': 'How to use',
@@ -966,6 +967,7 @@
                 'footer-license-short': 'Lisensyado sa ilalim ng <a href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">CC BY-NC 4.0</a>.',
                 'audience-title-vote': 'Bumoto para sa iyong Paborito!',
                 'audience-instruction-vote': 'Mayroon kang 3 boto. Pindutin para bumoto o alisin ang boto.',
+                'response-hidden-label': 'Nakatago ang tugon hanggang reveal',
                 'max-votes-notification': 'Nagamit mo na ang iyong 3 boto!',
                 'new-round-notification': 'Handa na para sa bagong round!',
                 'help-button-title': 'Paano gamitin',
