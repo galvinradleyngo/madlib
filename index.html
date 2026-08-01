@@ -835,6 +835,44 @@
             return false;
         }
 
+        function delay(ms) {
+            return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+
+        async function submitAudienceIdeaWithRetry(text, maxAttempts = 6, retryDelayMs = 700) {
+            const submissionsRef = collection(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`);
+            let lastError = new Error('AUTH_NOT_READY');
+
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                const authReady = await ensureAuthenticatedUser(1500);
+                if (!authReady) {
+                    lastError = new Error('AUTH_NOT_READY');
+                    if (attempt < maxAttempts) {
+                        await delay(retryDelayMs);
+                        continue;
+                    }
+                    break;
+                }
+
+                try {
+                    await addDoc(submissionsRef, { text, votes: 0, author: userId, authorName: audienceDisplayName || 'Anonymous' });
+                    return;
+                } catch (error) {
+                    lastError = error;
+                    const permissionIssue = String(error?.code || '').includes('permission-denied') || String(error?.message || '').toLowerCase().includes('insufficient permissions');
+
+                    if (permissionIssue && attempt < maxAttempts) {
+                        await delay(retryDelayMs);
+                        continue;
+                    }
+
+                    throw error;
+                }
+            }
+
+            throw lastError;
+        }
+
         async function handleAudienceSubmit() {
             const text = audienceInput.value.trim();
             if (!text || !db || isSubmittingAudienceIdea) return;
@@ -851,13 +889,7 @@
             audienceInput.value = '';
 
             try {
-                const authReady = await ensureAuthenticatedUser(2000);
-                if (!authReady) {
-                    throw new Error('AUTH_NOT_READY');
-                }
-
-                const submissionsRef = collection(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`);
-                await addDoc(submissionsRef, { text, votes: 0, author: userId, authorName: audienceDisplayName || 'Anonymous' });
+                await submitAudienceIdeaWithRetry(text);
             } catch (error) {
                 console.error('Failed to submit audience idea:', error);
                 hasSubmittedAudienceIdea = false;
