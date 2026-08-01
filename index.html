@@ -304,6 +304,7 @@
         let audienceDisplayName = '';
         let hasSubmittedAudienceIdea = false;
         let isVotingActive = false;
+        let isSubmittingAudienceIdea = false;
         let hasInitializedMain = false;
         let qrCodeLibraryPromise = null;
 
@@ -772,13 +773,35 @@
 
         async function handleAudienceSubmit() {
             const text = audienceInput.value.trim();
-            if (text && db) {
+            if (!text || !db || isSubmittingAudienceIdea) return;
+
+            isSubmittingAudienceIdea = true;
+            submitAudienceBtn.disabled = true;
+            const originalBtnText = submitAudienceBtn.textContent;
+            submitAudienceBtn.textContent = currentLanguage === 'en' ? 'Submitting...' : 'Ipinapasa...';
+
+            // Optimistic UI: immediately transition to waiting state for faster perceived response.
+            hasSubmittedAudienceIdea = true;
+            audienceSubmissionForm.classList.add('hidden');
+            audienceGreeting.classList.add('hidden');
+            thanksMessage.classList.remove('hidden');
+            audienceInput.value = '';
+
+            try {
                 const submissionsRef = collection(db, `artifacts/${appId}/public/data/madlibs_sessions/${currentSessionId}/submissions`);
                 await addDoc(submissionsRef, { text, votes: 0, author: userId, authorName: audienceDisplayName || 'Anonymous' });
-                hasSubmittedAudienceIdea = true;
-                audienceSubmissionForm.classList.add('hidden');
-                audienceGreeting.classList.add('hidden');
-                thanksMessage.classList.remove('hidden');
+            } catch (error) {
+                console.error('Failed to submit audience idea:', error);
+                hasSubmittedAudienceIdea = false;
+                thanksMessage.classList.add('hidden');
+                audienceSubmissionForm.classList.remove('hidden');
+                audienceGreeting.classList.remove('hidden');
+                audienceInput.value = text;
+                showNotification(uiTranslations[currentLanguage]['submit-failed-notification'], 'error');
+            } finally {
+                isSubmittingAudienceIdea = false;
+                submitAudienceBtn.disabled = false;
+                submitAudienceBtn.textContent = originalBtnText;
             }
         }
         
@@ -988,6 +1011,7 @@
                 'audience-title-vote': 'Vote for your Favorite!',
                 'audience-instruction-vote': 'You have 3 votes. Tap to vote or un-vote.',
                 'response-hidden-label': 'Response hidden until reveal',
+                'submit-failed-notification': 'Submission failed. Please try again.',
                 'max-votes-notification': 'You have used all 3 votes!',
                 'new-round-notification': 'Ready for a new round!',
                 'help-button-title': 'How to use',
@@ -1047,6 +1071,7 @@
                 'audience-title-vote': 'Bumoto para sa iyong Paborito!',
                 'audience-instruction-vote': 'Mayroon kang 3 boto. Pindutin para bumoto o alisin ang boto.',
                 'response-hidden-label': 'Nakatago ang tugon hanggang reveal',
+                'submit-failed-notification': 'Hindi naisumite ang tugon. Pakisubukang muli.',
                 'max-votes-notification': 'Nagamit mo na ang iyong 3 boto!',
                 'new-round-notification': 'Handa na para sa bagong round!',
                 'help-button-title': 'Paano gamitin',
