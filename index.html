@@ -188,7 +188,7 @@
          <div id="winner-display-audience" class="hidden text-center">
             <p class="text-gray-600 mb-2" data-key="winner-audience-info">Voting has ended! The winner is:</p>
             <div class="bg-yellow-100 border-2 border-yellow-300 p-4 rounded-lg">
-                <p id="winning-text-audience" class="text-xl font-bold text-yellow-800"></p>
+                <p id="winning-text-audience" class="text-xl font-bold text-yellow-800 whitespace-pre-line"></p>
             </div>
          </div>
             <div id="revealed-responses-audience" class="hidden mt-6 text-left">
@@ -255,7 +255,7 @@
         <div class="bg-white rounded-2xl p-10 text-center relative w-full max-w-md transform scale-95 transition-transform">
              <h2 class="text-4xl font-bold text-yellow-500 mb-4" data-key="winner-title">We have a winner!</h2>
              <div class="bg-yellow-100 border-4 border-yellow-300 p-6 rounded-lg my-6">
-                <p id="winning-text" class="text-2xl font-bold text-gray-800"></p>
+                <p id="winning-text" class="text-2xl font-bold text-gray-800 whitespace-pre-line"></p>
                 <p id="winning-votes" class="text-lg text-gray-600 mt-2"></p>
              </div>
              <button id="close-winner-modal" class="mt-4 bg-blue-600 text-white font-bold py-2 px-6 rounded-lg" data-key="close-btn">Close</button>
@@ -289,6 +289,7 @@
         let audienceDisplayName = '';
         let hasSubmittedAudienceIdea = false;
         let isVotingActive = false;
+        let hasInitializedMain = false;
 
         const appId = 'madlibs-app';
         
@@ -366,19 +367,35 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
                 updateConnectionStatus(true);
+
+                // Some Safari/iOS environments may delay or fail auth callbacks.
+                // Ensure the UI still initializes in offline/non-realtime mode.
+                setTimeout(() => runMainOnce(), 2500);
+
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         userId = user.uid;
                     } else {
-                        await signInAnonymously(auth);
+                        try {
+                            await signInAnonymously(auth);
+                        } catch (authError) {
+                            console.error("Anonymous auth failed:", authError);
+                            updateConnectionStatus(false);
+                        }
                     }
-                    main();
+                    runMainOnce();
                 });
             } catch (e) {
                 console.error("Firebase initialization failed:", e.message);
                 updateConnectionStatus(false);
-                main(); 
+                runMainOnce();
             }
+        }
+
+        function runMainOnce() {
+            if (hasInitializedMain) return;
+            hasInitializedMain = true;
+            main();
         }
 
         // --- APP INITIALIZATION ---
@@ -528,18 +545,26 @@
                 return;
             }
 
-            let winner = { votes: -1, text: 'No Winner' };
-            snapshot.forEach(doc => {
-                if (doc.data().votes > winner.votes) {
-                    winner = { id: doc.id, ...doc.data() };
-                }
-            });
+            const entries = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+            const highestVotes = Math.max(...entries.map((entry) => entry.votes || 0));
+            const topEntries = entries
+                .filter((entry) => (entry.votes || 0) === highestVotes)
+                .sort((a, b) => a.id.localeCompare(b.id));
+            const winners = topEntries.length > 1 ? topEntries.slice(0, 2) : [topEntries[0]];
+            const isTie = winners.length > 1;
 
             const sessionRef = doc(db, `artifacts/${appId}/public/data/madlibs_sessions`, currentSessionId);
-            await updateDoc(sessionRef, { winnerAnnounced: true, winner: winner });
+            await updateDoc(sessionRef, {
+                winnerAnnounced: true,
+                winner: winners[0],
+                winners,
+                isTie
+            });
             
-            winningText.textContent = `"${winner.text}"`;
-            winningVotes.textContent = `${winner.votes} ${currentLanguage === 'en' ? 'Votes' : 'Boto'}`;
+            winningText.textContent = formatWinnerLines(winners);
+            winningVotes.textContent = isTie
+                ? `${highestVotes} ${currentLanguage === 'en' ? 'Votes each' : 'Boto bawat isa'}`
+                : `${highestVotes} ${currentLanguage === 'en' ? 'Votes' : 'Boto'}`;
             winnerModal.classList.remove('hidden');
             setTimeout(() => winnerModal.querySelector('div').classList.remove('scale-95'), 10);
             
@@ -603,6 +628,12 @@
                     }, 180 + (index * 90));
                 }
             });
+        }
+
+        function formatWinnerLines(winners) {
+            return winners
+                .map((winner) => `${winner.authorName || 'Anonymous'}: "${winner.text || ''}"`)
+                .join('\n');
         }
 
         async function loadRevealedResponsesForPresenter(autoFlip = false) {
@@ -729,7 +760,10 @@
                     thanksMessage.classList.add('hidden');
                     audienceVotingArea.classList.add('hidden');
                     winnerDisplayAudience.classList.remove('hidden');
-                    winningTextAudience.textContent = `"${sessionData.winner.text}"`;
+                    const winners = Array.isArray(sessionData.winners) && sessionData.winners.length
+                        ? sessionData.winners
+                        : (sessionData.winner ? [sessionData.winner] : []);
+                    winningTextAudience.textContent = formatWinnerLines(winners);
                     if (sessionData.responsesRevealed) {
                         revealedResponsesAudience.classList.remove('hidden');
                         loadRevealedResponsesForAudience(true);
