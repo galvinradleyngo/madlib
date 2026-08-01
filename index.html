@@ -316,6 +316,20 @@
             });
         }
 
+        async function signInAnonymouslyWithTimeout(timeoutMs = 3500) {
+            if (!auth) return false;
+
+            const signInResult = await Promise.race([
+                signInAnonymously(auth).then(() => true).catch((error) => {
+                    console.error('Anonymous auth failed:', error);
+                    return false;
+                }),
+                new Promise((resolve) => setTimeout(() => resolve(false), timeoutMs))
+            ]);
+
+            return Boolean(signInResult);
+        }
+
         resetAuthReadyPromise();
 
         const appId = 'madlibs-app';
@@ -405,10 +419,8 @@
                         }
                     } else {
                         resetAuthReadyPromise();
-                        try {
-                            await signInAnonymously(auth);
-                        } catch (authError) {
-                            console.error("Anonymous auth failed:", authError);
+                        const signedIn = await signInAnonymouslyWithTimeout();
+                        if (!signedIn) {
                             updateConnectionStatus(false);
                             if (resolveAuthReady) {
                                 resolveAuthReady(false);
@@ -799,14 +811,10 @@
                 return true;
             }
 
-            try {
-                await signInAnonymously(auth);
-            } catch (error) {
-                console.error('Anonymous auth unavailable for submission:', error);
-                if (resolveAuthReady) {
-                    resolveAuthReady(false);
-                    resolveAuthReady = null;
-                }
+            const signedIn = await signInAnonymouslyWithTimeout(timeoutMs);
+            if (!signedIn && resolveAuthReady) {
+                resolveAuthReady(false);
+                resolveAuthReady = null;
             }
 
             if (auth.currentUser?.uid) {
@@ -836,7 +844,14 @@
             const originalBtnText = submitAudienceBtn.textContent;
             submitAudienceBtn.textContent = currentLanguage === 'en' ? 'Connecting...' : 'Kumokonekta...';
 
-            const authReady = await ensureAuthenticatedUser();
+            let authReady = false;
+            try {
+                authReady = await ensureAuthenticatedUser();
+            } catch (authWaitError) {
+                console.error('Auth wait failed:', authWaitError);
+                authReady = false;
+            }
+
             if (!authReady) {
                 isSubmittingAudienceIdea = false;
                 submitAudienceBtn.disabled = false;
