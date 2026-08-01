@@ -23,10 +23,9 @@
             }
         })();
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- QR Code Generation Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script defer src="https://cdn.tailwindcss.com"></script>
     <style>
+        .hidden { display: none; }
         html.audience-route #presenter-view { display: none !important; }
         html.audience-route #audience-view { display: block !important; }
         /* Custom font for the body */
@@ -306,6 +305,7 @@
         let hasSubmittedAudienceIdea = false;
         let isVotingActive = false;
         let hasInitializedMain = false;
+        let qrCodeLibraryPromise = null;
 
         const appId = 'madlibs-app';
         
@@ -533,7 +533,8 @@
             joinUrl.hash = `session=${encodeURIComponent(currentSessionId)}&lang=${encodeURIComponent(currentLanguage)}`;
             const url = joinUrl.toString();
             qrcodeContainer.innerHTML = '';
-            if (typeof QRCode !== 'undefined') {
+            const hasQrLibrary = await loadQrCodeLibrary();
+            if (hasQrLibrary && typeof QRCode !== 'undefined') {
                 new QRCode(qrcodeContainer, { text: url, width: 180, height: 180 });
             } else {
                 qrcodeContainer.innerHTML = '<p class="text-sm text-gray-500">QR unavailable. Use link below.</p>';
@@ -541,6 +542,21 @@
             sessionLinkInput.value = url;
             sessionIdDisplay.textContent = `Session ID: ${currentSessionId}`;
             qrModal.classList.remove('hidden');
+        }
+
+        function loadQrCodeLibrary() {
+            if (typeof QRCode !== 'undefined') return Promise.resolve(true);
+            if (qrCodeLibraryPromise) return qrCodeLibraryPromise;
+
+            qrCodeLibraryPromise = new Promise((resolve) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+                script.onload = () => resolve(true);
+                script.onerror = () => resolve(false);
+                document.head.appendChild(script);
+            });
+
+            return qrCodeLibraryPromise;
         }
 
         function listenForSubmissions() {
